@@ -80,7 +80,7 @@ jobs:
           
 
           payload = json.dumps({
-              "model": "gemini-1.5-pro-latest",
+              "model": "gemini-2.5-pro",
               "messages": [
                   {"role": "system", "content": "You are a demanding Tech Lead specializing in backend code review. Your expertise includes Java, Spring Boot, JWT Authentication, JPA/Hibernate, and PostgreSQL. The following issues must be reviewed: 1. N+1 query errors in Hibernate. 2. Security risks related to JWT authorization. 3. Code must comply with RESTful API guidelines. Provide concise answers that address the weaknesses directly, avoiding lengthy explanations of basic concepts."},
                   {"role": "user", "content": prompt}
