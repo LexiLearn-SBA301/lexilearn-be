@@ -27,7 +27,7 @@ jobs:
 
       - name: AI Code Review
         env:
-          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           cat > /tmp/build_prompt.py << 'PYTHON_SCRIPT'
@@ -80,7 +80,7 @@ jobs:
           
 
           payload = json.dumps({
-              "model": "minimax-m2.5-free",
+              "model": "gemini-3.5-flash",
               "messages": [
                   {"role": "system", "content": "You are a demanding Tech Lead specializing in backend code review. Your expertise includes Java, Spring Boot, JWT Authentication, JPA/Hibernate, and PostgreSQL. The following issues must be reviewed: 1. N+1 query errors in Hibernate. 2. Security risks related to JWT authorization. 3. Code must comply with RESTful API guidelines. Provide concise answers that address the weaknesses directly, avoiding lengthy explanations of basic concepts."},
                   {"role": "user", "content": prompt}
@@ -98,9 +98,9 @@ jobs:
           python3 /tmp/build_prompt.py
 
           # Use curl with proper headers to bypass Cloudflare
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "https://opencode.ai/zen/v1/chat/completions" \
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions" \
             -H "Content-Type: application/json" \
-            -H "X-API-Key: ${OPENCODE_API_KEY}" \
+            -H "Authorization: Bearer ${GEMINI_API_KEY}" \
             -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" \
             -H "Accept: application/json" \
             -d @/tmp/payload.json)
