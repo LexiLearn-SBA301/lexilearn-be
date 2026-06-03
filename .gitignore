@@ -34,4 +34,18 @@ build/
 
 .env
 *.env
+application-local.yaml
+application-local.yml
+
 node_modules/
+
+*.log
+logs/
+
+*.p12
+*.jks
+*.keystore
+
+.DS_Store
+
+docs/
