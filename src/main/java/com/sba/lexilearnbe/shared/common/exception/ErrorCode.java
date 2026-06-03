@@ -32,28 +32,34 @@ public enum ErrorCode {
     OTP_INVALID          ("otp_invalid",           HttpStatus.BAD_REQUEST, "Mã OTP không đúng"),
     OTP_EXPIRED          ("otp_expired",           HttpStatus.BAD_REQUEST, "Mã OTP đã hết hạn"),
 
-    // ── Property ────────────────────────────────────────────────
-    PROPERTY_NOT_FOUND   ("property_not_found",    HttpStatus.NOT_FOUND, "Property không tồn tại"),
-    ROOM_NOT_FOUND       ("room_not_found",        HttpStatus.NOT_FOUND, "Phòng không tồn tại"),
-    ROOM_NOT_AVAILABLE   ("room_not_available",    HttpStatus.CONFLICT,  "Phòng không khả dụng"),
+    // ── Work ────────────────────────────────────────────────────
+    WORK_NOT_FOUND       ("work_not_found",        HttpStatus.NOT_FOUND, "Tác phẩm không tồn tại"),
+    WORK_ALREADY_EXISTS  ("work_already_exists",   HttpStatus.CONFLICT,  "Tác phẩm đã tồn tại"),
 
-    // ── Booking ─────────────────────────────────────────────────
-    BOOKING_NOT_FOUND         ("booking_not_found",         HttpStatus.NOT_FOUND, "Booking không tồn tại"),
-    BOOKING_ALREADY_CANCELLED ("booking_already_cancelled", HttpStatus.CONFLICT, "Booking đã bị hủy"),
-    BOOKING_CANNOT_CANCEL     ("booking_cannot_cancel",     HttpStatus.BAD_REQUEST, "Không thể hủy booking"),
+    // ── Author ──────────────────────────────────────────────────
+    AUTHOR_NOT_FOUND     ("author_not_found",      HttpStatus.NOT_FOUND, "Tác giả không tồn tại"),
+    AUTHOR_ALREADY_EXISTS("author_already_exists", HttpStatus.CONFLICT,  "Tác giả đã tồn tại"),
 
-    // ── Payment ─────────────────────────────────────────────────
-    PAYMENT_NOT_FOUND    ("payment_not_found",     HttpStatus.NOT_FOUND,    "Thông tin thanh toán không tồn tại"),
-    PAYMENT_FAILED       ("payment_failed",        HttpStatus.BAD_REQUEST,  "Thanh toán thất bại"),
-    REFUND_NOT_ALLOWED   ("refund_not_allowed",    HttpStatus.FORBIDDEN,    "Không có quyền hoàn tiền"),
+    // ── Tag ─────────────────────────────────────────────────────
+    TAG_NOT_FOUND        ("tag_not_found",         HttpStatus.NOT_FOUND, "Tag không tồn tại"),
+    TAG_ALREADY_EXISTS   ("tag_already_exists",    HttpStatus.CONFLICT,  "Tag đã tồn tại"),
 
-    // ── Ticket ──────────────────────────────────────────────────
-    TICKET_NOT_FOUND        ("ticket_not_found",        HttpStatus.NOT_FOUND, "Ticket không tồn tại"),
-    TICKET_ALREADY_RESOLVED ("ticket_already_resolved", HttpStatus.CONFLICT, "Ticket đã được giải quyết"),
+    // ── Work Section ────────────────────────────────────────────
+    SECTION_NOT_FOUND    ("section_not_found",     HttpStatus.NOT_FOUND, "Phần văn bản không tồn tại"),
 
-    // ── S3 ──────────────────────────────────────────────────
-    FAIL_TO_UPLOAD          ("fail_to_upload", HttpStatus.BAD_REQUEST, "Không thể tải lên file"),
-    FAIL_TO_GENERATED_PRESIGN_KEY ("fail_to_generate_prKey", HttpStatus.BAD_REQUEST, "Không thể tạo presigned URL"),;
+    // ── Bookmark ────────────────────────────────────────────────
+    BOOKMARK_NOT_FOUND      ("bookmark_not_found",      HttpStatus.NOT_FOUND, "Bookmark không tồn tại"),
+    BOOKMARK_ALREADY_EXISTS ("bookmark_already_exists", HttpStatus.CONFLICT,  "Tác phẩm đã được bookmark"),
+
+    // ── Note ────────────────────────────────────────────────────
+    NOTE_NOT_FOUND       ("note_not_found",        HttpStatus.NOT_FOUND, "Ghi chú không tồn tại"),
+
+    // ── Chat ────────────────────────────────────────────────────
+    CHAT_SESSION_NOT_FOUND ("chat_session_not_found", HttpStatus.NOT_FOUND, "Phiên chat không tồn tại"),
+
+    // ── Storage ─────────────────────────────────────────────────
+    FAIL_TO_UPLOAD            ("fail_to_upload",           HttpStatus.BAD_REQUEST, "Không thể tải lên file"),
+    FAIL_TO_GENERATE_PRESIGNED_URL ("fail_to_generate_presigned_url", HttpStatus.BAD_REQUEST, "Không thể tạo presigned URL");
 
 
     private final String code;
