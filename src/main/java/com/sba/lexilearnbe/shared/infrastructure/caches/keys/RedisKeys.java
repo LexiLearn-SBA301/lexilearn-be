@@ -15,9 +15,21 @@ public class RedisKeys {
 //        return "roles:" + accountId;
 //    }
 
-//    Key for refreshToken
+//    Key for refreshToken (token đang sống) → value: "accountId:familyId"
     public static String refreshTokenKey(String tokenHashed) {
         return "refreshToken:" + tokenHashed;
+    }
+
+//    Token đã rotate (đã dùng 1 lần) → value: familyId.
+//    Dùng để phát hiện replay: token "đã dùng" mà bị dùng lại → token bị trộm → revoke cả family
+    public static String refreshTokenUsedKey(String tokenHashed) {
+        return "refreshToken:used:" + tokenHashed;
+    }
+
+//    Family của refresh token (1 family = 1 lần login, rotate giữ nguyên family)
+//    → value: hash của token đang sống trong family (mỗi family chỉ có 1 token sống)
+    public static String refreshTokenFamilyKey(String familyId) {
+        return "refreshToken:family:" + familyId;
     }
 
 //    Key for OTP code

@@ -48,3 +48,8 @@ app:
     length: 6
     max-sends-per-hour: 5   # chống spam OTP
     max-verify-attempts: 5  # chống brute-force OTP
+
+  jwt:
+    # HS256 yêu cầu secret >= 32 bytes, production phải set qua biến môi trường JWT_SECRET
+    secret: ${JWT_SECRET:lexilearn-dev-secret-key-change-me-in-production-2026}
+    access-token-ttl: 1800  # access token sống 30 phút (giây)

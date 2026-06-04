@@ -1,8 +1,11 @@
 package com.sba.lexilearnbe.modules.auth.controller;
 
+import com.sba.lexilearnbe.modules.auth.dto.request.LoginRequest;
+import com.sba.lexilearnbe.modules.auth.dto.request.RefreshTokenRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.RegisterRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.ResendOtpRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.VerifyOtpRequest;
+import com.sba.lexilearnbe.modules.auth.dto.response.TokenResponse;
 import com.sba.lexilearnbe.modules.auth.services.AuthService;
 import com.sba.lexilearnbe.shared.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -59,6 +62,47 @@ public class AuthController {
 
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .message("Đã gửi lại mã OTP. Vui lòng kiểm tra email.")
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/login")
+    @Operation(summary = "Đăng nhập", description = "Xác thực email + password, trả về access token (JWT) và refresh token")
+    public ResponseEntity<ApiResponse<TokenResponse>> login(@Valid @RequestBody LoginRequest request) {
+        TokenResponse tokens = authService.login(request);
+
+        ApiResponse<TokenResponse> response = ApiResponse.<TokenResponse>builder()
+                .message("Đăng nhập thành công.")
+                .result(tokens)
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/refresh")
+    @Operation(summary = "Làm mới token", description = "Đổi refresh token lấy cặp token mới (refresh token cũ bị thu hồi ngay)")
+    public ResponseEntity<ApiResponse<TokenResponse>> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        TokenResponse tokens = authService.refresh(request);
+
+        ApiResponse<TokenResponse> response = ApiResponse.<TokenResponse>builder()
+                .message("Làm mới token thành công.")
+                .result(tokens)
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/logout")
+    @Operation(summary = "Đăng xuất", description = "Thu hồi refresh token. Access token vẫn hợp lệ đến khi hết hạn")
+    public ResponseEntity<ApiResponse<Void>> logout(@Valid @RequestBody RefreshTokenRequest request) {
+        authService.logout(request);
+
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .message("Đăng xuất thành công.")
                 .timestamp(LocalDateTime.now())
                 .build();
 

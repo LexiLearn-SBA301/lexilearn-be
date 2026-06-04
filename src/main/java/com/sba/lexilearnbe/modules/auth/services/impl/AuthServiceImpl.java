@@ -1,8 +1,11 @@
 package com.sba.lexilearnbe.modules.auth.services.impl;
 
+import com.sba.lexilearnbe.modules.auth.dto.request.LoginRequest;
+import com.sba.lexilearnbe.modules.auth.dto.request.RefreshTokenRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.RegisterRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.ResendOtpRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.VerifyOtpRequest;
+import com.sba.lexilearnbe.modules.auth.dto.response.TokenResponse;
 import com.sba.lexilearnbe.modules.auth.entity.Account;
 import com.sba.lexilearnbe.modules.auth.entity.Role;
 import com.sba.lexilearnbe.modules.auth.enums.AccountStatus;
@@ -10,10 +13,12 @@ import com.sba.lexilearnbe.modules.auth.repository.AccountRepository;
 import com.sba.lexilearnbe.modules.auth.repository.RoleRepository;
 import com.sba.lexilearnbe.modules.auth.services.AuthService;
 import com.sba.lexilearnbe.modules.auth.services.OtpService;
+import com.sba.lexilearnbe.modules.auth.services.RefreshTokenService;
 import com.sba.lexilearnbe.shared.common.exception.ApiException;
 import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
 import com.sba.lexilearnbe.shared.infrastructure.caches.keys.RedisKeys;
 import com.sba.lexilearnbe.shared.infrastructure.mail.MailService;
+import com.sba.lexilearnbe.shared.infrastructure.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -35,6 +40,8 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final OtpService otpService;
     private final MailService mailService;
+    private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
 
     /**
      * Đăng ký account mới:
@@ -124,6 +131,90 @@ public class AuthServiceImpl implements AuthService {
 
         sendRegisterOtp(email);
         log.info("Gửi lại OTP xác thực email: {}", email);
+    }
+
+    /**
+     * Đăng nhập:
+     * 1. Tìm account theo email + so khớp password (sai email hay sai password
+     *    đều trả INVALID_CREDENTIALS — không để lộ email nào đã đăng ký)
+     * 2. Chặn account chưa verify / bị khóa
+     * 3. Cấp access token (JWT) + refresh token (Redis)
+     */
+    @Override
+    public TokenResponse login(LoginRequest request) {
+        String email = request.getEmail().trim().toLowerCase();
+
+        Account account = accountRepository.findByEmail(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.INVALID_CREDENTIALS));
+
+        if (!passwordEncoder.matches(request.getPassword(), account.getPasswordHash())) {
+            throw new ApiException(ErrorCode.INVALID_CREDENTIALS);
+        }
+
+        validateActive(account);
+
+        log.info("Đăng nhập thành công: {}", email);
+        return issueTokens(account);
+    }
+
+    /**
+     * Refresh token rotation + reuse detection:
+     * 1. Rotate: token cũ chuyển thành "đã dùng", cấp token mới cùng family.
+     *    Token "đã dùng" bị dùng lại → coi như bị trộm, RefreshTokenService
+     *    revoke toàn bộ family và throw TOKEN_INVALID
+     * 2. Kiểm tra account vẫn còn hợp lệ — nếu không thì thu hồi luôn
+     *    token vừa cấp (kill cả phiên đăng nhập)
+     */
+    @Override
+    public TokenResponse refresh(RefreshTokenRequest request) {
+        RefreshTokenService.RotatedToken rotated = refreshTokenService.rotate(request.getRefreshToken());
+
+        try {
+            Account account = accountRepository.findById(rotated.accountId())
+                    .orElseThrow(() -> new ApiException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+            validateActive(account);
+
+            log.info("Refresh token thành công: {}", account.getEmail());
+            return TokenResponse.builder()
+                    .accessToken(jwtService.generateAccessToken(account))
+                    .refreshToken(rotated.newToken())
+                    .expiresIn(jwtService.getAccessTokenTtl())
+                    .build();
+        } catch (ApiException ex) {
+            // Account bị khóa / không còn tồn tại → token mới vừa cấp cũng phải chết theo
+            refreshTokenService.revoke(rotated.newToken());
+            throw ex;
+        }
+    }
+
+    /**
+     * Đăng xuất: thu hồi refresh token + toàn bộ family của nó (idempotent).
+     * Access token vẫn sống đến khi hết hạn — giới hạn của JWT stateless.
+     */
+    @Override
+    public void logout(RefreshTokenRequest request) {
+        refreshTokenService.revoke(request.getRefreshToken());
+        log.info("Đăng xuất: refresh token đã được thu hồi");
+    }
+
+    /** Cấp cặp access token + refresh token cho account. */
+    private TokenResponse issueTokens(Account account) {
+        return TokenResponse.builder()
+                .accessToken(jwtService.generateAccessToken(account))
+                .refreshToken(refreshTokenService.issue(account.getId()))
+                .expiresIn(jwtService.getAccessTokenTtl())
+                .build();
+    }
+
+    /** Account phải ACTIVE mới được đăng nhập / refresh token. */
+    private void validateActive(Account account) {
+        if (account.getStatus() == AccountStatus.UNVERIFIED) {
+            throw new ApiException(ErrorCode.ACCOUNT_NOT_VERIFIED);
+        }
+        if (account.getStatus() == AccountStatus.LOCKED) {
+            throw new ApiException(ErrorCode.ACCOUNT_LOCKED);
+        }
     }
 
     /** Sinh OTP đăng ký (đã gồm rate limit) và gửi mail xác thực. */

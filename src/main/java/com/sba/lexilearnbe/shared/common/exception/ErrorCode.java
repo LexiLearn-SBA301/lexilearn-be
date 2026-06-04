@@ -20,6 +20,7 @@ public enum ErrorCode {
 
     // ── Auth ────────────────────────────────────────────────────
     UNAUTHENTICATED      ("unauthenticated",       HttpStatus.UNAUTHORIZED,  "Chưa đăng nhập"),
+    INVALID_CREDENTIALS  ("invalid_credentials",   HttpStatus.UNAUTHORIZED,  "Email hoặc mật khẩu không đúng"),
     FORBIDDEN            ("forbidden",             HttpStatus.FORBIDDEN,     "Không có quyền"),
     TOKEN_INVALID        ("token_invalid",         HttpStatus.UNAUTHORIZED,  "Token không hợp lệ"),
     TOKEN_EXPIRED        ("token_expired",         HttpStatus.UNAUTHORIZED,  "Token hết hạn"),

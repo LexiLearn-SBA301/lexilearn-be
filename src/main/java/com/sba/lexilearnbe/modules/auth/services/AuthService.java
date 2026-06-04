@@ -1,8 +1,11 @@
 package com.sba.lexilearnbe.modules.auth.services;
 
+import com.sba.lexilearnbe.modules.auth.dto.request.LoginRequest;
+import com.sba.lexilearnbe.modules.auth.dto.request.RefreshTokenRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.RegisterRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.ResendOtpRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.VerifyOtpRequest;
+import com.sba.lexilearnbe.modules.auth.dto.response.TokenResponse;
 
 public interface AuthService {
 
@@ -24,4 +27,23 @@ public interface AuthService {
      * Gửi lại OTP xác thực email (OTP cũ hết hạn / thất lạc).
      */
     void resendRegisterOtp(ResendOtpRequest request);
+
+    /**
+     * Đăng nhập bằng email + password: account phải ACTIVE,
+     * trả về cặp access token (JWT) + refresh token (lưu Redis).
+     */
+    TokenResponse login(LoginRequest request);
+
+    /**
+     * Cấp lại cặp token mới từ refresh token (rotation + reuse detection:
+     * token cũ chỉ dùng được 1 lần, token đã dùng mà bị dùng lại
+     * → coi như bị trộm, revoke toàn bộ phiên đăng nhập liên quan).
+     */
+    TokenResponse refresh(RefreshTokenRequest request);
+
+    /**
+     * Đăng xuất: thu hồi refresh token + toàn bộ family khỏi Redis.
+     * Access token vẫn sống đến khi hết hạn (stateless, không revoke được).
+     */
+    void logout(RefreshTokenRequest request);
 }
