@@ -6,9 +6,6 @@ import org.springframework.http.HttpStatus;
 @Getter
 public enum ErrorCode {
 
-    // SUCCESS CODE
-    SUCCESS("success_request", HttpStatus.OK, "Request successful"),
-
     // ── System ──────────────────────────────────────────────────
     INTERNAL_SERVER_ERROR("internal_server_error", HttpStatus.INTERNAL_SERVER_ERROR, "Lỗi hệ thống"),
     VALIDATION_ERROR     ("validation_error",      HttpStatus.BAD_REQUEST,           "Dữ liệu không hợp lệ"),
