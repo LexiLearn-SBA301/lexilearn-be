@@ -12,10 +12,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -97,9 +99,11 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    @Operation(summary = "Đăng xuất", description = "Thu hồi refresh token. Access token vẫn hợp lệ đến khi hết hạn")
-    public ResponseEntity<ApiResponse<Void>> logout(@Valid @RequestBody RefreshTokenRequest request) {
-        authService.logout(request);
+    @Operation(summary = "Đăng xuất", description = "Thu hồi refresh token và blacklist access token (gửi kèm header Authorization) đến khi hết hạn")
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @Valid @RequestBody RefreshTokenRequest request,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader) {
+        authService.logout(request, authorizationHeader);
 
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .message("Đăng xuất thành công.")

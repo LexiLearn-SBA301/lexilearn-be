@@ -30,6 +30,7 @@ import java.util.UUID;
  * - Không có token → đi tiếp, AuthenticationEntryPoint sẽ chặn nếu endpoint cần đăng nhập
  * - Token hết hạn / không hợp lệ → trả 401 JSON ngay tại filter
  *   (phân biệt TOKEN_EXPIRED vs TOKEN_INVALID để FE biết khi nào cần refresh)
+ * - Token nằm trong blacklist (đã logout) → trả 401 TOKEN_INVALID
  * - Bỏ qua các endpoint public (đặc biệt /auth/refresh: FE thường gắn sẵn
  *   access token đã hết hạn vào header, không được chặn ở đây)
  */
@@ -41,6 +42,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
 
     private final JwtService jwtService;
+    private final TokenBlacklistService tokenBlacklistService;
     private final SecurityErrorResponseWriter errorWriter;
 
     @Override
@@ -63,6 +65,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             Claims claims = jwtService.parseAccessToken(token);
+
+            // Token hợp lệ về chữ ký/hạn nhưng đã bị thu hồi khi logout → chặn
+            if (tokenBlacklistService.isBlacklisted(token)) {
+                errorWriter.write(request, response, ErrorCode.TOKEN_INVALID);
+                return;
+            }
 
             UUID accountId = UUID.fromString(claims.getSubject());
 

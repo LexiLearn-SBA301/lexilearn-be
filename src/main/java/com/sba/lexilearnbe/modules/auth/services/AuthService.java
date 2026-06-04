@@ -42,8 +42,11 @@ public interface AuthService {
     TokenResponse refresh(RefreshTokenRequest request);
 
     /**
-     * Đăng xuất: thu hồi refresh token + toàn bộ family khỏi Redis.
-     * Access token vẫn sống đến khi hết hạn (stateless, không revoke được).
+     * Đăng xuất: thu hồi refresh token + toàn bộ family khỏi Redis,
+     * đồng thời blacklist access token (lấy từ header Authorization)
+     * đến khi nó hết hạn — token bị đánh cắp cũng không dùng được sau logout.
+     *
+     * @param authorizationHeader header Authorization (Bearer ...), có thể null
      */
-    void logout(RefreshTokenRequest request);
+    void logout(RefreshTokenRequest request, String authorizationHeader);
 }

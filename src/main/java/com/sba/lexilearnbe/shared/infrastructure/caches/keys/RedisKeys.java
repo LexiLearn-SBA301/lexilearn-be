@@ -32,6 +32,11 @@ public class RedisKeys {
         return "refreshToken:family:" + familyId;
     }
 
+//    Blacklist access token khi logout (key theo hash, TTL = thời gian sống còn lại của token)
+    public static String accessTokenBlacklistKey(String tokenHashed) {
+        return "accessToken:blacklist:" + tokenHashed;
+    }
+
 //    Key for OTP code
     public static String otpCodeKey(String type, String email) {
         return "otp: "+ type.toLowerCase()  +": " + email.toLowerCase();

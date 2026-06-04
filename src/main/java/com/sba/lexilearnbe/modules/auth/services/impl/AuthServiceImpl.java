@@ -19,6 +19,8 @@ import com.sba.lexilearnbe.shared.common.exception.ApiException;
 import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
 import com.sba.lexilearnbe.shared.infrastructure.caches.keys.RedisKeys;
 import com.sba.lexilearnbe.shared.infrastructure.security.JwtService;
+import com.sba.lexilearnbe.shared.infrastructure.security.TokenBlacklistService;
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -35,6 +37,7 @@ import java.util.Set;
 public class AuthServiceImpl implements AuthService {
 
     private static final String DEFAULT_ROLE = "USER";
+    private static final String BEARER_PREFIX = "Bearer ";
 
     private final AccountRepository accountRepository;
     private final RoleRepository roleRepository;
@@ -43,6 +46,7 @@ public class AuthServiceImpl implements AuthService {
     private final ApplicationEventPublisher eventPublisher;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     /**
      * Đăng ký account mới:
@@ -192,13 +196,31 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * Đăng xuất: thu hồi refresh token + toàn bộ family của nó (idempotent).
-     * Access token vẫn sống đến khi hết hạn — giới hạn của JWT stateless.
+     * Đăng xuất: thu hồi refresh token + toàn bộ family của nó (idempotent),
+     * đồng thời blacklist access token đến khi hết hạn — sau logout,
+     * access token (kể cả khi đã bị đánh cắp) không còn dùng được.
      */
     @Override
-    public void logout(RefreshTokenRequest request) {
+    public void logout(RefreshTokenRequest request, String authorizationHeader) {
         refreshTokenService.revoke(request.getRefreshToken());
-        log.info("Đăng xuất: refresh token đã được thu hồi");
+        blacklistAccessToken(authorizationHeader);
+        log.info("Đăng xuất: refresh token đã thu hồi, access token đã blacklist");
+    }
+
+    /**
+     * Blacklist access token lấy từ header Authorization.
+     * Header thiếu / token hết hạn / không hợp lệ → bỏ qua (token đã chết
+     * thì không còn gì để thu hồi) — không được làm fail luồng logout.
+     */
+    private void blacklistAccessToken(String authorizationHeader) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith(BEARER_PREFIX)) {
+            return;
+        }
+        try {
+            tokenBlacklistService.blacklist(authorizationHeader.substring(BEARER_PREFIX.length()));
+        } catch (JwtException | IllegalArgumentException ex) {
+            log.debug("Bỏ qua blacklist access token khi logout (token hết hạn/không hợp lệ): {}", ex.getMessage());
+        }
     }
 
     /** Cấp cặp access token + refresh token cho account. */
