@@ -37,7 +37,10 @@ public class Account extends BaseEntity {
     @Column(name = "email_verified_at")
     private LocalDateTime emailVerifiedAt;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    // LAZY (default): các query account thường (verify OTP, resend, check tồn tại)
+    // không cần roles. Path cần roles (login/refresh → sinh JWT) dùng
+    // findWithRolesBy... (@EntityGraph) trong AccountRepository.
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "account_roles",
             joinColumns = @JoinColumn(name = "account_id"),

@@ -9,6 +9,7 @@ import com.sba.lexilearnbe.modules.auth.dto.response.TokenResponse;
 import com.sba.lexilearnbe.modules.auth.entity.Account;
 import com.sba.lexilearnbe.modules.auth.entity.Role;
 import com.sba.lexilearnbe.modules.auth.enums.AccountStatus;
+import com.sba.lexilearnbe.modules.auth.event.OtpEmailEvent;
 import com.sba.lexilearnbe.modules.auth.repository.AccountRepository;
 import com.sba.lexilearnbe.modules.auth.repository.RoleRepository;
 import com.sba.lexilearnbe.modules.auth.services.AuthService;
@@ -17,10 +18,10 @@ import com.sba.lexilearnbe.modules.auth.services.RefreshTokenService;
 import com.sba.lexilearnbe.shared.common.exception.ApiException;
 import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
 import com.sba.lexilearnbe.shared.infrastructure.caches.keys.RedisKeys;
-import com.sba.lexilearnbe.shared.infrastructure.mail.MailService;
 import com.sba.lexilearnbe.shared.infrastructure.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,7 +40,7 @@ public class AuthServiceImpl implements AuthService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final OtpService otpService;
-    private final MailService mailService;
+    private final ApplicationEventPublisher eventPublisher;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
 
@@ -144,7 +145,8 @@ public class AuthServiceImpl implements AuthService {
     public TokenResponse login(LoginRequest request) {
         String email = request.getEmail().trim().toLowerCase();
 
-        Account account = accountRepository.findByEmail(email)
+        // findWithRolesByEmail: fetch kèm roles (LAZY) vì sinh JWT cần roles
+        Account account = accountRepository.findWithRolesByEmail(email)
                 .orElseThrow(() -> new ApiException(ErrorCode.INVALID_CREDENTIALS));
 
         if (!passwordEncoder.matches(request.getPassword(), account.getPasswordHash())) {
@@ -170,7 +172,8 @@ public class AuthServiceImpl implements AuthService {
         RefreshTokenService.RotatedToken rotated = refreshTokenService.rotate(request.getRefreshToken());
 
         try {
-            Account account = accountRepository.findById(rotated.accountId())
+            // findWithRolesById: fetch kèm roles (LAZY) vì sinh JWT cần roles
+            Account account = accountRepository.findWithRolesById(rotated.accountId())
                     .orElseThrow(() -> new ApiException(ErrorCode.ACCOUNT_NOT_FOUND));
 
             validateActive(account);
@@ -217,10 +220,15 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    /** Sinh OTP đăng ký (đã gồm rate limit) và gửi mail xác thực. */
+    /**
+     * Sinh OTP đăng ký (đã gồm rate limit — lỗi rate limit throw ngay tại đây
+     * để user nhận được response lỗi), rồi publish event gửi mail.
+     * Mail được gửi bất đồng bộ SAU KHI transaction commit (OtpEmailListener)
+     * — không giữ DB connection trong lúc chờ SMTP.
+     */
     private void sendRegisterOtp(String email) {
         String otp = otpService.generateOtp(OTP_TYPE_REGISTER, email);
-        mailService.sendOtpEmail(email, otp, RedisKeys.TTL_OTP / 60);
+        eventPublisher.publishEvent(new OtpEmailEvent(email, otp, RedisKeys.TTL_OTP / 60));
     }
 
     /** Account phải đang UNVERIFIED mới được verify/resend OTP đăng ký. */
