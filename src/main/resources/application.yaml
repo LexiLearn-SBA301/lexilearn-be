@@ -47,3 +47,4 @@ app:
   otp:
     length: 6
     max-sends-per-hour: 5   # chống spam OTP
+    max-verify-attempts: 5  # chống brute-force OTP

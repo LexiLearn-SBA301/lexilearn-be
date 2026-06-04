@@ -1,6 +1,8 @@
 package com.sba.lexilearnbe.modules.auth.controller;
 
 import com.sba.lexilearnbe.modules.auth.dto.request.RegisterRequest;
+import com.sba.lexilearnbe.modules.auth.dto.request.ResendOtpRequest;
+import com.sba.lexilearnbe.modules.auth.dto.request.VerifyOtpRequest;
 import com.sba.lexilearnbe.modules.auth.services.AuthService;
 import com.sba.lexilearnbe.shared.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,5 +37,31 @@ public class AuthController {
                 .build();
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/verify-otp")
+    @Operation(summary = "Xác thực email bằng OTP", description = "Verify mã OTP và kích hoạt account (UNVERIFIED → ACTIVE)")
+    public ResponseEntity<ApiResponse<Void>> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
+        authService.verifyRegisterOtp(request);
+
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .message("Xác thực email thành công. Bạn có thể đăng nhập ngay bây giờ.")
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/resend-otp")
+    @Operation(summary = "Gửi lại OTP xác thực email", description = "Sinh OTP mới và gửi lại qua email (tối đa 5 lần/giờ)")
+    public ResponseEntity<ApiResponse<Void>> resendOtp(@Valid @RequestBody ResendOtpRequest request) {
+        authService.resendRegisterOtp(request);
+
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .message("Đã gửi lại mã OTP. Vui lòng kiểm tra email.")
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity.ok(response);
     }
 }

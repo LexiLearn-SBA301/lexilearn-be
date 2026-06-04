@@ -29,6 +29,7 @@ public enum ErrorCode {
     ACCOUNT_EXISTS       ("account_exists",        HttpStatus.CONFLICT,  "Email đã được đăng ký"),
     ACCOUNT_LOCKED       ("account_locked",        HttpStatus.FORBIDDEN, "Tài khoản bị khóa"),
     ACCOUNT_NOT_VERIFIED ("account_not_verified",  HttpStatus.FORBIDDEN, "Email chưa được xác thực"),
+    ACCOUNT_ALREADY_VERIFIED("account_already_verified", HttpStatus.CONFLICT, "Email đã được xác thực"),
     OTP_INVALID          ("otp_invalid",           HttpStatus.BAD_REQUEST, "Mã OTP không đúng"),
     OTP_EXPIRED          ("otp_expired",           HttpStatus.BAD_REQUEST, "Mã OTP đã hết hạn"),
 

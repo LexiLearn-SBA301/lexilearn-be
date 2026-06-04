@@ -1,6 +1,8 @@
 package com.sba.lexilearnbe.modules.auth.services;
 
 import com.sba.lexilearnbe.modules.auth.dto.request.RegisterRequest;
+import com.sba.lexilearnbe.modules.auth.dto.request.ResendOtpRequest;
+import com.sba.lexilearnbe.modules.auth.dto.request.VerifyOtpRequest;
 import com.sba.lexilearnbe.modules.auth.entity.Account;
 import com.sba.lexilearnbe.modules.auth.entity.Role;
 import com.sba.lexilearnbe.modules.auth.enums.AccountStatus;
@@ -16,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Slf4j
@@ -64,5 +67,59 @@ public class AuthService {
         mailService.sendOtpEmail(email, otp, RedisKeys.TTL_OTP / 60);
 
         log.info("Đăng ký account mới: {}", email);
+    }
+
+    /**
+     * Xác thực email bằng OTP:
+     * 1. Tìm account theo email (lowercase)
+     * 2. Chặn account đã ACTIVE / bị LOCKED
+     * 3. Verify OTP (sai/hết hạn/quá số lần thử → OtpService throw)
+     * 4. Đổi status → ACTIVE, ghi nhận thời điểm xác thực
+     */
+    @Transactional
+    public void verifyRegisterOtp(VerifyOtpRequest request) {
+        String email = request.getEmail().trim().toLowerCase();
+
+        Account account = accountRepository.findByEmail(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+        validateUnverified(account);
+
+        otpService.verifyOtp(OTP_TYPE_REGISTER, email, request.getOtp());
+
+        account.setStatus(AccountStatus.ACTIVE);
+        account.setEmailVerifiedAt(LocalDateTime.now());
+        accountRepository.save(account);
+
+        log.info("Xác thực email thành công: {}", email);
+    }
+
+    /**
+     * Gửi lại OTP xác thực email (OTP cũ hết hạn / thất lạc).
+     * Không @Transactional: chỉ thao tác Redis + gửi mail, không ghi DB.
+     * Rate limit gửi mail do OtpService đảm nhận.
+     */
+    public void resendRegisterOtp(ResendOtpRequest request) {
+        String email = request.getEmail().trim().toLowerCase();
+
+        Account account = accountRepository.findByEmail(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+        validateUnverified(account);
+
+        String otp = otpService.generateOtp(OTP_TYPE_REGISTER, email);
+        mailService.sendOtpEmail(email, otp, RedisKeys.TTL_OTP / 60);
+
+        log.info("Gửi lại OTP xác thực email: {}", email);
+    }
+
+    /** Account phải đang UNVERIFIED mới được verify/resend OTP đăng ký. */
+    private void validateUnverified(Account account) {
+        if (account.getStatus() == AccountStatus.ACTIVE) {
+            throw new ApiException(ErrorCode.ACCOUNT_ALREADY_VERIFIED);
+        }
+        if (account.getStatus() == AccountStatus.LOCKED) {
+            throw new ApiException(ErrorCode.ACCOUNT_LOCKED);
+        }
     }
 }

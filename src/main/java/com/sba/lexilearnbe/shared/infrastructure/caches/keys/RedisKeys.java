@@ -30,6 +30,11 @@ public class RedisKeys {
         return "rate:otp:" + email.toLowerCase();
     }
 
+//    counter for failed OTP verify attempts to prevent brute-force
+    public static String otpVerifyAttemptKey(String type, String email) {
+        return "rate:otp-verify:" + type.toLowerCase() + ":" + email.toLowerCase();
+    }
+
     public static final long TTL_PERMISSION_ROLE = 15 * 60L;        // 15 phút
     public static final long TTL_REFRESH_TOKEN   = 30 * 24 * 3600L; // 30 ngày
     public static final long TTL_OTP             = 5 * 60L;         // 5 phút
