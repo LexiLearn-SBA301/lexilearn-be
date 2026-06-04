@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Slf4j
 @RestControllerAdvice
@@ -38,10 +40,16 @@ public class GlobalExceptionHandler {
 
 //    2. Bắt lỗi validation ở DTO
     @ExceptionHandler(value = MethodArgumentNotValidException.class) // Đây là lỗi khi validate dữ liệu đầu vào của DTO thất bại, ví dụ như @NotNull, @Size, ...
-    public ResponseEntity<ApiResponse<Void>> handleValidationException(MethodArgumentNotValidException ex, HttpServletRequest request) {
-        ApiResponse<Void> response = ApiResponse.<Void>builder()
+    public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationException(MethodArgumentNotValidException ex, HttpServletRequest request) {
+        // Gom lỗi theo từng field: { "email": "Email không hợp lệ", "password": "..." }
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+                fieldErrors.putIfAbsent(error.getField(), error.getDefaultMessage()));
+
+        ApiResponse<Map<String, String>> response = ApiResponse.<Map<String, String>>builder()
                 .code(ErrorCode.VALIDATION_ERROR.getCode())
                 .message(ErrorCode.VALIDATION_ERROR.getMessage())
+                .result(fieldErrors)
                 .timestamp(LocalDateTime.now())
                 .path(request.getRequestURI())
                 .build();
@@ -51,10 +59,16 @@ public class GlobalExceptionHandler {
 
 //    3. Bắt các lỗi trên URL
     @ExceptionHandler(value = ConstraintViolationException.class) // Đây là lỗi khi có lỗi validate trên URL, ví dụ như @RequestParam, @PathVariable, ...
-    public ResponseEntity<ApiResponse<Void>> handleConstraintViolationException(ConstraintViolationException ex, HttpServletRequest request) {
-        ApiResponse<Void> response = ApiResponse.<Void>builder()
+    public ResponseEntity<ApiResponse<Map<String, String>>> handleConstraintViolationException(ConstraintViolationException ex, HttpServletRequest request) {
+        // Gom lỗi theo từng param trên URL: { "register.email": "Email không hợp lệ" }
+        Map<String, String> violations = new LinkedHashMap<>();
+        ex.getConstraintViolations().forEach(violation ->
+                violations.putIfAbsent(violation.getPropertyPath().toString(), violation.getMessage()));
+
+        ApiResponse<Map<String, String>> response = ApiResponse.<Map<String, String>>builder()
                 .code(ErrorCode.VALIDATION_ERROR.getCode())
                 .message(ErrorCode.VALIDATION_ERROR.getMessage())
+                .result(violations)
                 .timestamp(LocalDateTime.now())
                 .path(request.getRequestURI())
                 .build();

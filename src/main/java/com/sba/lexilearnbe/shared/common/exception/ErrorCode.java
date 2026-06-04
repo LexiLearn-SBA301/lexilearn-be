@@ -6,9 +6,6 @@ import org.springframework.http.HttpStatus;
 @Getter
 public enum ErrorCode {
 
-    // SUCCESS CODE
-    SUCCESS("success_request", HttpStatus.OK, "Request successful"),
-
     // ── System ──────────────────────────────────────────────────
     INTERNAL_SERVER_ERROR("internal_server_error", HttpStatus.INTERNAL_SERVER_ERROR, "Lỗi hệ thống"),
     VALIDATION_ERROR     ("validation_error",      HttpStatus.BAD_REQUEST,           "Dữ liệu không hợp lệ"),
@@ -20,6 +17,7 @@ public enum ErrorCode {
 
     // ── Auth ────────────────────────────────────────────────────
     UNAUTHENTICATED      ("unauthenticated",       HttpStatus.UNAUTHORIZED,  "Chưa đăng nhập"),
+    INVALID_CREDENTIALS  ("invalid_credentials",   HttpStatus.UNAUTHORIZED,  "Email hoặc mật khẩu không đúng"),
     FORBIDDEN            ("forbidden",             HttpStatus.FORBIDDEN,     "Không có quyền"),
     TOKEN_INVALID        ("token_invalid",         HttpStatus.UNAUTHORIZED,  "Token không hợp lệ"),
     TOKEN_EXPIRED        ("token_expired",         HttpStatus.UNAUTHORIZED,  "Token hết hạn"),
@@ -29,6 +27,7 @@ public enum ErrorCode {
     ACCOUNT_EXISTS       ("account_exists",        HttpStatus.CONFLICT,  "Email đã được đăng ký"),
     ACCOUNT_LOCKED       ("account_locked",        HttpStatus.FORBIDDEN, "Tài khoản bị khóa"),
     ACCOUNT_NOT_VERIFIED ("account_not_verified",  HttpStatus.FORBIDDEN, "Email chưa được xác thực"),
+    ACCOUNT_ALREADY_VERIFIED("account_already_verified", HttpStatus.CONFLICT, "Email đã được xác thực"),
     OTP_INVALID          ("otp_invalid",           HttpStatus.BAD_REQUEST, "Mã OTP không đúng"),
     OTP_EXPIRED          ("otp_expired",           HttpStatus.BAD_REQUEST, "Mã OTP đã hết hạn"),
 
