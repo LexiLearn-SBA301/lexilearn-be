@@ -8,7 +8,10 @@ import com.sba.lexilearnbe.modules.auth.dto.request.VerifyOtpRequest;
 import com.sba.lexilearnbe.modules.auth.dto.response.TokenResponse;
 import com.sba.lexilearnbe.modules.auth.services.AuthService;
 import com.sba.lexilearnbe.shared.common.response.ApiResponse;
+import com.sba.lexilearnbe.shared.infrastructure.config.OpenApiConfig;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +30,7 @@ import java.time.LocalDateTime;
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 @Tag(name = "Auth", description = "API xác thực: đăng ký, đăng nhập, OTP, token")
+@SecurityRequirements // rỗng = override global: endpoint public, không hiện ổ khóa trên Swagger
 public class AuthController {
 
     private final AuthService authService;
@@ -100,6 +104,8 @@ public class AuthController {
 
     @PostMapping("/logout")
     @Operation(summary = "Đăng xuất", description = "Thu hồi refresh token và blacklist access token (gửi kèm header Authorization) đến khi hết hạn")
+    // Override @SecurityRequirements rỗng ở class: logout cần Swagger gửi kèm access token để blacklist
+    @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_BEARER)
     public ResponseEntity<ApiResponse<Void>> logout(
             @Valid @RequestBody RefreshTokenRequest request,
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader) {
