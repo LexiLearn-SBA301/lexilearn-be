@@ -39,7 +39,10 @@ public class AuthServiceImpl implements AuthService {
     /**
      * Đăng ký account mới:
      * 1. Lowercase email (unique index trên LOWER(email))
-     * 2. Check email đã tồn tại chưa
+     * 2. Email đã tồn tại:
+     *    - Đã verify (ACTIVE/LOCKED) → báo lỗi ACCOUNT_EXISTS
+     *    - Chưa verify (UNVERIFIED) → cho đăng ký lại: cập nhật password mới
+     *      (an toàn vì email chưa verify thì chưa ai "sở hữu" account)
      * 3. Tạo account UNVERIFIED + gán role USER
      * 4. Sinh OTP → Redis → gửi mail xác thực
      */
@@ -48,8 +51,19 @@ public class AuthServiceImpl implements AuthService {
     public void register(RegisterRequest request) {
         String email = request.getEmail().trim().toLowerCase();
 
-        if (accountRepository.existsByEmail(email)) {
-            throw new ApiException(ErrorCode.ACCOUNT_EXISTS);
+        Account existing = accountRepository.findByEmail(email).orElse(null);
+        if (existing != null) {
+            if (existing.getStatus() != AccountStatus.UNVERIFIED) {
+                throw new ApiException(ErrorCode.ACCOUNT_EXISTS);
+            }
+
+            // Chưa verify → coi như đăng ký lại từ đầu
+            existing.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+            accountRepository.save(existing);
+
+            sendRegisterOtp(email);
+            log.info("Đăng ký lại account chưa xác thực: {}", email);
+            return;
         }
 
         Role userRole = roleRepository.findByName(DEFAULT_ROLE)
@@ -64,10 +78,7 @@ public class AuthServiceImpl implements AuthService {
 
         accountRepository.save(account);
 
-        // Gửi OTP xác thực email
-        String otp = otpService.generateOtp(OTP_TYPE_REGISTER, email);
-        mailService.sendOtpEmail(email, otp, RedisKeys.TTL_OTP / 60);
-
+        sendRegisterOtp(email);
         log.info("Đăng ký account mới: {}", email);
     }
 
@@ -111,10 +122,14 @@ public class AuthServiceImpl implements AuthService {
 
         validateUnverified(account);
 
+        sendRegisterOtp(email);
+        log.info("Gửi lại OTP xác thực email: {}", email);
+    }
+
+    /** Sinh OTP đăng ký (đã gồm rate limit) và gửi mail xác thực. */
+    private void sendRegisterOtp(String email) {
         String otp = otpService.generateOtp(OTP_TYPE_REGISTER, email);
         mailService.sendOtpEmail(email, otp, RedisKeys.TTL_OTP / 60);
-
-        log.info("Gửi lại OTP xác thực email: {}", email);
     }
 
     /** Account phải đang UNVERIFIED mới được verify/resend OTP đăng ký. */

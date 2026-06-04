@@ -11,7 +11,5 @@ import java.util.UUID;
 public interface AccountRepository extends JpaRepository<Account, UUID> {
 
     // email đã được lowercase ở tầng service trước khi gọi
-    boolean existsByEmail(String email);
-
     Optional<Account> findByEmail(String email);
 }

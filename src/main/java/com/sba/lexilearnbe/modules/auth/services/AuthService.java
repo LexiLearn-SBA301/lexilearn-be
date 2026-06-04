@@ -11,6 +11,7 @@ public interface AuthService {
     /**
      * Đăng ký account mới: tạo account UNVERIFIED + gán role USER,
      * sinh OTP và gửi mail xác thực.
+     * Email đã tồn tại nhưng chưa verify → cho đăng ký lại (cập nhật password + OTP mới).
      */
     void register(RegisterRequest request);
 
