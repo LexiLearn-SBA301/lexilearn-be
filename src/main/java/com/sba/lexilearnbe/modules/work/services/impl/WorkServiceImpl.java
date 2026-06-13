@@ -23,19 +23,8 @@ public class WorkServiceImpl implements WorkService {
     private final WorkRepository workRepository;
 
     @Override
-    public Page<WorkSummaryResponse> getWorksByFilter(String genre, String period, String searchKeyword, int page, int size, String sort) {
-
-        String[] sortParams = sort.split(",");
-        Sort.Direction direction = (sortParams.length > 1 && sortParams[1].equalsIgnoreCase("desc"))
-                ? Sort.Direction.DESC : Sort.Direction.ASC;
-
-        String sortBy = sortParams[0];
-        if ("viewCount".equalsIgnoreCase(sortBy)) {
-            sortBy = "view_count";
-        }
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
-
+    public Page<WorkSummaryResponse> getWorksByFilter(String genre, String period, String searchKeyword, Pageable pageable) {
+        // Không cần parse thủ công nữa vì Controller đã lo việc đó bằng @PageableDefault
         Page<Work> worksPage = workRepository.findWorksWithFilter(genre, period, searchKeyword, pageable);
 
         return worksPage.map(work -> WorkSummaryResponse.builder()
@@ -52,11 +41,9 @@ public class WorkServiceImpl implements WorkService {
 
     @Override
     public WorkDetailResponse getWorkDetail(String slug) {
-        // Tìm tác phẩm theo slug, nếu không có thì bắn Exception
         Work work = workRepository.findBySlug(slug)
                 .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
 
-        // Map toàn bộ dữ liệu chi tiết
         return WorkDetailResponse.builder()
                 .id(work.getId())
                 .title(work.getTitle())

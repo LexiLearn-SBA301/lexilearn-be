@@ -16,19 +16,15 @@ public interface WorkRepository extends JpaRepository<Work, UUID> {
     Optional<Work> findBySlug(String slug);
     boolean existsBySlug(String slug);
 
-    @Query(value = "SELECT w.* FROM works w LEFT JOIN authors a ON w.author_id = a.id " +
-            "WHERE w.is_published = true " +
+    // Chuyển sang JPQL với JOIN FETCH để giải quyết lỗi N+1
+    // Dùng 'w' thay vì 'w.*' -> Hibernate sẽ tự map đúng cột và hỗ trợ sort động
+    @Query("SELECT DISTINCT w FROM Work w " +
+            "LEFT JOIN FETCH w.author a " +
+            "WHERE w.isPublished = true " +
             "AND (:genre IS NULL OR w.genre = :genre) " +
             "AND (:period IS NULL OR w.period = :period) " +
-            "AND (:search IS NULL OR LOWER(w.title::text) LIKE LOWER(CONCAT('%', :search, '%')) " +
-            "OR LOWER(a.name::text) LIKE LOWER(CONCAT('%', :search, '%')))",
-            countQuery = "SELECT count(*) FROM works w LEFT JOIN authors a ON w.author_id = a.id " +
-                    "WHERE w.is_published = true " +
-                    "AND (:genre IS NULL OR w.genre = :genre) " +
-                    "AND (:period IS NULL OR w.period = :period) " +
-                    "AND (:search IS NULL OR LOWER(w.title::text) LIKE LOWER(CONCAT('%', :search, '%')) " +
-                    "OR LOWER(a.name::text) LIKE LOWER(CONCAT('%', :search, '%')))",
-            nativeQuery = true)
+            "AND (:search IS NULL OR LOWER(w.title) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) " +
+            "OR LOWER(a.name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')))")
     Page<Work> findWorksWithFilter(
             @Param("genre") String genre,
             @Param("period") String period,

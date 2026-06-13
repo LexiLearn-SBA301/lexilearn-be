@@ -6,7 +6,11 @@ import com.sba.lexilearnbe.modules.work.services.WorkService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,23 +22,15 @@ public class WorkController {
 
     private final WorkService workService;
 
-    // API Lấy danh sách + Lọc (Filter) + Tìm kiếm (Search) + Phân trang
     @GetMapping
-    @Operation(
-            summary = "Lấy danh sách Tác phẩm",
-            description = "Lấy danh sách tất cả tác phẩm trong thư viện. Hỗ trợ lọc theo thể loại (genre), thời kỳ văn học (period), tìm kiếm theo từ khóa (search) và phân trang."
-    )
+    @Operation(summary = "Lấy danh sách Tác phẩm")
     public ResponseEntity<Page<WorkSummaryResponse>> getWorks(
             @RequestParam(required = false) String genre,
             @RequestParam(required = false) String period,
             @RequestParam(required = false) String search,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "24") int size,
-            @RequestParam(defaultValue = "viewCount,desc") String sort // Mặc định hiển thị sách nổi bật nhất
+            @ParameterObject @PageableDefault(size = 24, sort = "viewCount", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        // Truyền thêm biến search xuống Service
-        Page<WorkSummaryResponse> response = workService.getWorksByFilter(genre, period, search, page, size, sort);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(workService.getWorksByFilter(genre, period, search, pageable));
     }
 
 
