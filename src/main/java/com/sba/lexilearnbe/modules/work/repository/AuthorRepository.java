@@ -1,0 +1,19 @@
+package com.sba.lexilearnbe.modules.work.repository;
+
+import com.sba.lexilearnbe.modules.work.entity.Author;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+import java.util.UUID;
+
+@Repository
+public interface AuthorRepository extends JpaRepository<Author, UUID> {
+    Optional<Author> findBySlug(String slug);
+    @Query("SELECT a FROM Author a WHERE :search IS NULL OR a.name ILIKE CONCAT('%', :search, '%')")
+    Page<Author> findAuthorsWithFilter(@Param("search") String search, Pageable pageable);
+}
