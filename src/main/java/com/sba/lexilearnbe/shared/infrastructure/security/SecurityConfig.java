@@ -21,7 +21,7 @@ public class SecurityConfig {
     // Các endpoint public, không cần đăng nhập
     // (JwtAuthenticationFilter cũng dùng danh sách này để bỏ qua việc parse token)
     public static final String[] PUBLIC_ENDPOINTS = {
-            "/auth/**",
+            "/api/v1/auth/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/v3/api-docs/**"
