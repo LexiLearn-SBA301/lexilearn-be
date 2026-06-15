@@ -14,6 +14,6 @@ import java.util.UUID;
 @Repository
 public interface AuthorRepository extends JpaRepository<Author, UUID> {
     Optional<Author> findBySlug(String slug);
-    @Query("SELECT a FROM Author a WHERE LOWER(a.name) LIKE LOWER(CONCAT('%', :search, '%'))")
+    @Query("SELECT a FROM Author a WHERE :search IS NULL OR a.name ILIKE CONCAT('%', :search, '%')")
     Page<Author> findAuthorsWithFilter(@Param("search") String search, Pageable pageable);
 }

@@ -16,6 +16,7 @@ import java.util.UUID;
 @Repository
 public interface WorkRepository extends JpaRepository<Work, UUID> {
 
+    @EntityGraph(attributePaths = {"author", "tags"})
     Optional<Work> findBySlug(String slug);
     boolean existsBySlug(String slug);
     @EntityGraph(attributePaths = {"author"})
