@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDateTime;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 @Tag(name = "Auth", description = "API xác thực: đăng ký, đăng nhập, OTP, token")
 @SecurityRequirements // rỗng = override global: endpoint public, không hiện ổ khóa trên Swagger
