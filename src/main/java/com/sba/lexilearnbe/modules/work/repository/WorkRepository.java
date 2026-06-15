@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,20 +17,19 @@ public interface WorkRepository extends JpaRepository<Work, UUID> {
 
     Optional<Work> findBySlug(String slug);
     boolean existsBySlug(String slug);
-
-    // Chuyển sang JPQL với JOIN FETCH để giải quyết lỗi N+1
-    // Dùng 'w' thay vì 'w.*' -> Hibernate sẽ tự map đúng cột và hỗ trợ sort động
     @Query("SELECT DISTINCT w FROM Work w " +
             "LEFT JOIN FETCH w.author a " +
             "WHERE w.isPublished = true " +
             "AND (:genre IS NULL OR w.genre = :genre) " +
             "AND (:period IS NULL OR w.period = :period) " +
-            "AND (:search IS NULL OR LOWER(w.title) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) " +
-            "OR LOWER(a.name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')))")
+            "AND (:search IS NULL OR LOWER(w.title) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')) " +
+            "OR LOWER(a.name) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')))")
     Page<Work> findWorksWithFilter(
             @Param("genre") String genre,
             @Param("period") String period,
             @Param("search") String search,
             Pageable pageable
     );
+    @Query("SELECT DISTINCT w FROM Work w LEFT JOIN FETCH w.tags WHERE w IN :works")
+    List<Work> fetchTagsForWorks(@Param("works") List<Work> works);
 }

@@ -2,6 +2,7 @@ package com.sba.lexilearnbe.modules.work.services.impl;
 
 import com.sba.lexilearnbe.modules.work.dto.response.WorkDetailResponse;
 import com.sba.lexilearnbe.modules.work.dto.response.WorkSummaryResponse;
+import com.sba.lexilearnbe.modules.work.entity.Tag;
 import com.sba.lexilearnbe.modules.work.entity.Work;
 import com.sba.lexilearnbe.modules.work.repository.WorkRepository;
 import com.sba.lexilearnbe.modules.work.services.WorkService;
@@ -24,18 +25,17 @@ public class WorkServiceImpl implements WorkService {
 
     @Override
     public Page<WorkSummaryResponse> getWorksByFilter(String genre, String period, String searchKeyword, Pageable pageable) {
-        // Không cần parse thủ công nữa vì Controller đã lo việc đó bằng @PageableDefault
         Page<Work> worksPage = workRepository.findWorksWithFilter(genre, period, searchKeyword, pageable);
+        if (worksPage.hasContent()) {
+            workRepository.fetchTagsForWorks(worksPage.getContent());
+        }
 
         return worksPage.map(work -> WorkSummaryResponse.builder()
                 .id(work.getId())
                 .slug(work.getSlug())
                 .title(work.getTitle())
                 .authorName(work.getAuthor() != null ? work.getAuthor().getName() : "Khuyết danh")
-                .coverUrl(work.getCoverUrl())
-                .subGenre(work.getSubGenre())
-                .famousQuote(work.getFamousQuote())
-                .tags(new ArrayList<>())
+                .tags(work.getTags().stream().map(Tag::getName).toList()) // Mapping tags chuẩn chỉnh
                 .build());
     }
 
@@ -67,7 +67,7 @@ public class WorkServiceImpl implements WorkService {
                 .artisticValue(work.getArtisticValue())
                 .famousQuote(work.getFamousQuote())
                 .quoteAttribution(work.getQuoteAttribution())
-                .tags(new ArrayList<>())
+                .tags(work.getTags().stream().map(Tag::getName).toList())
                 .updatedAt(work.getUpdatedAt())
                 .build();
     }
