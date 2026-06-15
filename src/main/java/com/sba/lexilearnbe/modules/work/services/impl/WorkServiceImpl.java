@@ -10,12 +10,11 @@ import com.sba.lexilearnbe.shared.common.exception.ApiException;
 import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,16 +25,20 @@ public class WorkServiceImpl implements WorkService {
     @Override
     public Page<WorkSummaryResponse> getWorksByFilter(String genre, String period, String searchKeyword, Pageable pageable) {
         Page<Work> worksPage = workRepository.findWorksWithFilter(genre, period, searchKeyword, pageable);
-        if (worksPage.hasContent()) {
-            workRepository.fetchTagsForWorks(worksPage.getContent());
+        if (worksPage.isEmpty()) {
+            return Page.empty(pageable);
         }
+        List<Work> worksWithTags = workRepository.fetchTagsForWorks(worksPage.getContent());
+        Map<UUID, Set<Tag>> tagsMap = worksWithTags.stream()
+                .collect(Collectors.toMap(Work::getId, Work::getTags));
 
         return worksPage.map(work -> WorkSummaryResponse.builder()
                 .id(work.getId())
                 .slug(work.getSlug())
                 .title(work.getTitle())
                 .authorName(work.getAuthor() != null ? work.getAuthor().getName() : "Khuyết danh")
-                .tags(work.getTags().stream().map(Tag::getName).toList()) // Mapping tags chuẩn chỉnh
+                .tags(tagsMap.getOrDefault(work.getId(), Collections.emptySet())
+                        .stream().map(Tag::getName).toList())
                 .build());
     }
 

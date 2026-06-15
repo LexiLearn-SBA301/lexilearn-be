@@ -9,9 +9,7 @@ import com.sba.lexilearnbe.shared.common.exception.ApiException;
 import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -21,17 +19,9 @@ public class AuthorServiceImpl implements AuthorService {
     private final AuthorRepository authorRepository;
 
     @Override
-    public Page<AuthorSummaryResponse> getAuthors(String searchKeyword, int page, int size, String sort) {
-        String[] sortParams = sort.split(",");
-        Sort.Direction direction = (sortParams.length > 1 && sortParams[1].equalsIgnoreCase("desc"))
-                ? Sort.Direction.DESC : Sort.Direction.ASC;
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortParams[0]));
-
-        // XỬ LÝ LỖI Ở ĐÂY: Nếu searchKeyword là null, đổi thành chuỗi rỗng ""
+    public Page<AuthorSummaryResponse> getAuthors(String searchKeyword, Pageable pageable) {
         String safeSearch = (searchKeyword == null) ? "" : searchKeyword;
 
-        // Truyền safeSearch vào
         Page<Author> authorsPage = authorRepository.findAuthorsWithFilter(safeSearch, pageable);
 
         return authorsPage.map(author -> AuthorSummaryResponse.builder()

@@ -3,6 +3,7 @@ package com.sba.lexilearnbe.modules.work.repository;
 import com.sba.lexilearnbe.modules.work.entity.Work;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,8 +18,9 @@ public interface WorkRepository extends JpaRepository<Work, UUID> {
 
     Optional<Work> findBySlug(String slug);
     boolean existsBySlug(String slug);
+    @EntityGraph(attributePaths = {"author"})
     @Query("SELECT DISTINCT w FROM Work w " +
-            "LEFT JOIN FETCH w.author a " +
+            "LEFT JOIN w.author a " +
             "WHERE w.isPublished = true " +
             "AND (:genre IS NULL OR w.genre = :genre) " +
             "AND (:period IS NULL OR w.period = :period) " +

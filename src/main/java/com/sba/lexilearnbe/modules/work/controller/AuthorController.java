@@ -6,7 +6,10 @@ import com.sba.lexilearnbe.modules.work.services.AuthorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,11 +25,9 @@ public class AuthorController {
     @Operation(summary = "Lấy danh sách Tác giả", description = "Lấy danh sách tất cả tác giả, có hỗ trợ tìm kiếm và phân trang")
     public ResponseEntity<Page<AuthorSummaryResponse>> getAuthors(
             @RequestParam(required = false) String search,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "name,asc") String sort) {
+            @ParameterObject @PageableDefault(size = 20, sort = "name") Pageable pageable) {
 
-        Page<AuthorSummaryResponse> response = authorService.getAuthors(search, page, size, sort);
+        Page<AuthorSummaryResponse> response = authorService.getAuthors(search, pageable);
         return ResponseEntity.ok(response);
     }
 
