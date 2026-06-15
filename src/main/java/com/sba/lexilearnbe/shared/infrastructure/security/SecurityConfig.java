@@ -20,8 +20,17 @@ public class SecurityConfig {
 
     // Các endpoint public, không cần đăng nhập
     // (JwtAuthenticationFilter cũng dùng danh sách này để bỏ qua việc parse token)
+    // Liệt kê tường minh từng endpoint auth thay vì wildcard /api/v1/auth/**:
+    // tránh việc thêm endpoint cần đăng nhập sau này (vd /me, /change-password) bị
+    // vô tình public. Lưu ý /refresh và /logout vẫn phải public — chúng tự xử lý
+    // token thủ công và không được để JwtAuthenticationFilter chặn access token hết hạn.
     public static final String[] PUBLIC_ENDPOINTS = {
-            "/api/v1/auth/**",
+            "/api/v1/auth/register",
+            "/api/v1/auth/verify-otp",
+            "/api/v1/auth/resend-otp",
+            "/api/v1/auth/login",
+            "/api/v1/auth/refresh",
+            "/api/v1/auth/logout",
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/v3/api-docs/**"
