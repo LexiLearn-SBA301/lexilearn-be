@@ -56,9 +56,11 @@ public class Work {
     @Column(name = "cover_url", length = 500)
     private String coverUrl;
 
+    @Builder.Default
     @Column(name = "is_published", nullable = false)
     private Boolean isPublished = false;
 
+    @Builder.Default
     @Column(name = "view_count", nullable = false)
     private Long viewCount = 0L;
 
@@ -88,6 +90,7 @@ public class Work {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Builder.Default
     @ManyToMany
     @JoinTable(
             name = "work_tags",

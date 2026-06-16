@@ -35,4 +35,6 @@ public interface WorkRepository extends JpaRepository<Work, UUID> {
     );
     @Query("SELECT DISTINCT w FROM Work w LEFT JOIN FETCH w.tags WHERE w IN :works")
     List<Work> fetchTagsForWorks(@Param("works") List<Work> works);
+
+    boolean existsByAuthorId(UUID id);
 }
