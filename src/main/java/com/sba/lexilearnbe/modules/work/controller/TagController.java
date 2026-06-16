@@ -22,10 +22,13 @@ public class TagController {
 
     @GetMapping
     @Operation(summary = "Lấy danh sách Thẻ", description = "Lấy toàn bộ danh sách các thẻ phân loại, sắp xếp theo thứ tự A-Z")
-    public ApiResponse<List<TagResponse>> getAllTags() {
-        return ApiResponse.<List<TagResponse>>builder()
-                .message("Lấy danh sách thẻ thành công")
+    public ResponseEntity<ApiResponse<List<TagResponse>>> getAllTags() {
+
+        ApiResponse<List<TagResponse>> response = ApiResponse.<List<TagResponse>>builder()
+                .message("Lấy danh sách thẻ phân loại thành công")
                 .result(tagService.getAllTags())
                 .build();
+
+        return ResponseEntity.ok(response);
     }
 }

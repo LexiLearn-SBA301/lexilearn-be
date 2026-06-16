@@ -24,22 +24,27 @@ public class AuthorController {
 
     @GetMapping
     @Operation(summary = "Lấy danh sách Tác giả", description = "Lấy danh sách tất cả tác giả, có hỗ trợ tìm kiếm và phân trang")
-    public ApiResponse<Page<AuthorSummaryResponse>> getAuthors(
+    public ResponseEntity<ApiResponse<Page<AuthorSummaryResponse>>> getAuthors(
             @RequestParam(required = false) String search,
             @ParameterObject @PageableDefault(size = 20, sort = "name") Pageable pageable) {
 
-        return ApiResponse.<Page<AuthorSummaryResponse>>builder()
+        ApiResponse<Page<AuthorSummaryResponse>> response = ApiResponse.<Page<AuthorSummaryResponse>>builder()
                 .message("Lấy danh sách tác giả thành công")
                 .result(authorService.getAuthors(search, pageable))
                 .build();
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{slug}")
     @Operation(summary = "Lấy chi tiết Tác giả", description = "Lấy thông tin chi tiết tiểu sử của tác giả dựa vào slug")
-    public ApiResponse<AuthorDetailResponse> getAuthorDetail(@PathVariable String slug) {
-        return ApiResponse.<AuthorDetailResponse>builder()
+    public ResponseEntity<ApiResponse<AuthorDetailResponse>> getAuthorDetail(@PathVariable String slug) {
+
+        ApiResponse<AuthorDetailResponse> response = ApiResponse.<AuthorDetailResponse>builder()
                 .message("Lấy chi tiết tác giả thành công")
                 .result(authorService.getAuthorDetail(slug))
                 .build();
+
+        return ResponseEntity.ok(response);
     }
 }

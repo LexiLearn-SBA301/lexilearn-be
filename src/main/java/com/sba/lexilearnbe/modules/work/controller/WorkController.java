@@ -25,28 +25,29 @@ public class WorkController {
 
     @GetMapping
     @Operation(summary = "Lấy danh sách Tác phẩm")
-    public ApiResponse<Page<WorkSummaryResponse>> getWorks(
+    public ResponseEntity<ApiResponse<Page<WorkSummaryResponse>>> getWorks(
             @RequestParam(required = false) String genre,
             @RequestParam(required = false) String period,
             @RequestParam(required = false) String search,
             @ParameterObject @PageableDefault(size = 24, sort = "viewCount", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ApiResponse.<Page<WorkSummaryResponse>>builder()
+        ApiResponse<Page<WorkSummaryResponse>> response = ApiResponse.<Page<WorkSummaryResponse>>builder()
                 .message("Lấy danh sách tác phẩm thành công")
                 .result(workService.getWorksByFilter(genre, period, search, pageable))
                 .build();
+
+        return ResponseEntity.ok(response);
     }
 
-
     @GetMapping("/{slug}")
-    @Operation(
-            summary = "Lấy chi tiết Tác phẩm",
-            description = "Lấy toàn bộ thông tin chi tiết của một tác phẩm (bao gồm bối cảnh lịch sử, giá trị hiện thực, trích dẫn hay...) dựa vào slug."
-    )
-    public ApiResponse<WorkDetailResponse> getWorkDetail(@PathVariable String slug) {
-        return ApiResponse.<WorkDetailResponse>builder()
+    @Operation(summary = "Lấy chi tiết Tác phẩm", description = "Lấy toàn bộ thông tin chi tiết của một tác phẩm...")
+    public ResponseEntity<ApiResponse<WorkDetailResponse>> getWorkDetail(@PathVariable String slug) {
+
+        ApiResponse<WorkDetailResponse> response = ApiResponse.<WorkDetailResponse>builder()
                 .message("Lấy chi tiết tác phẩm thành công")
                 .result(workService.getWorkDetail(slug))
                 .build();
+
+        return ResponseEntity.ok(response);
     }
 }
