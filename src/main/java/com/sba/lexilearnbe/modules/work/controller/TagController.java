@@ -2,6 +2,7 @@ package com.sba.lexilearnbe.modules.work.controller;
 
 import com.sba.lexilearnbe.modules.work.dto.response.TagResponse;
 import com.sba.lexilearnbe.modules.work.services.TagService;
+import com.sba.lexilearnbe.shared.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,8 +22,10 @@ public class TagController {
 
     @GetMapping
     @Operation(summary = "Lấy danh sách Thẻ", description = "Lấy toàn bộ danh sách các thẻ phân loại, sắp xếp theo thứ tự A-Z")
-    public ResponseEntity<List<TagResponse>> getAllTags() {
-        List<TagResponse> response = tagService.getAllTags();
-        return ResponseEntity.ok(response);
+    public ApiResponse<List<TagResponse>> getAllTags() {
+        return ApiResponse.<List<TagResponse>>builder()
+                .message("Lấy danh sách thẻ thành công")
+                .result(tagService.getAllTags())
+                .build();
     }
 }
