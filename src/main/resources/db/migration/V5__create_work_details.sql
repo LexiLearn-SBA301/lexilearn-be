@@ -53,9 +53,6 @@ CREATE TABLE artistic_features (
         CHECK (display_order >= 0)
 );
 
-CREATE INDEX idx_work_sections_work_number
-    ON work_sections(work_id, number);
-
 CREATE TRIGGER tr_work_sections_updated_at
     BEFORE UPDATE ON work_sections
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

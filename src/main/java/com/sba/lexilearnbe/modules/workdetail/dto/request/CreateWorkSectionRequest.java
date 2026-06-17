@@ -1,7 +1,6 @@
 package com.sba.lexilearnbe.modules.workdetail.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -13,7 +12,6 @@ import lombok.Setter;
 @NoArgsConstructor
 public class CreateWorkSectionRequest {
 
-    @NotNull(message = "Số thứ tự phần văn bản không được để trống")
     @Positive(message = "Số thứ tự phần văn bản phải lớn hơn 0")
     private Integer number;
 

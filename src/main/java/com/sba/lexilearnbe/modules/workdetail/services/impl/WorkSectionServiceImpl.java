@@ -53,11 +53,15 @@ public class WorkSectionServiceImpl implements WorkSectionService {
     @Transactional
     public WorkSectionDetailResponse createSection(UUID workId, CreateWorkSectionRequest request) {
         Work work = requireWork(workId);
-        validateUniqueNumber(workId, request.getNumber(), null);
+        Integer sectionNumber = request.getNumber() != null
+                ? request.getNumber()
+                : getNextNumber(workId);
+
+        validateUniqueNumber(workId, sectionNumber, null);
 
         WorkSection section = WorkSection.builder()
                 .work(work)
-                .number(request.getNumber())
+                .number(sectionNumber)
                 .title(request.getTitle().trim())
                 .content(request.getContent())
                 .wordCount(WordCountCalculator.count(request.getContent()))
@@ -119,5 +123,9 @@ public class WorkSectionServiceImpl implements WorkSectionService {
                     "Số thứ tự phần văn bản đã tồn tại trong tác phẩm"
             );
         }
+    }
+
+    private int getNextNumber(UUID workId) {
+        return workSectionRepository.findMaxNumberByWorkId(workId) + 1;
     }
 }
