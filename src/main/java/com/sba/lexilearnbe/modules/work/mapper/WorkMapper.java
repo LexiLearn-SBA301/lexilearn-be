@@ -1,19 +1,17 @@
 package com.sba.lexilearnbe.modules.work.mapper;
 
+import com.sba.lexilearnbe.modules.work.dto.request.WorkRequest;
 import com.sba.lexilearnbe.modules.work.dto.response.WorkDetailResponse;
 import com.sba.lexilearnbe.modules.work.dto.response.WorkSummaryResponse;
 import com.sba.lexilearnbe.modules.work.entity.Tag;
 import com.sba.lexilearnbe.modules.work.entity.Work;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingConstants;
-import org.mapstruct.ReportingPolicy;
+import org.mapstruct.*;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, unmappedTargetPolicy = ReportingPolicy.IGNORE)
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, unmappedTargetPolicy = ReportingPolicy.IGNORE, nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface WorkMapper {
 
     @Mapping(target = "authorName", source = "work.author.name", defaultValue = "Khuyết danh")
@@ -30,4 +28,11 @@ public interface WorkMapper {
         if (tags == null) return Collections.emptyList();
         return tags.stream().map(Tag::getName).toList();
     }
+    @Mapping(target = "genre", source = "genre")
+    @Mapping(target = "period", source = "period")
+    Work toEntity(WorkRequest request);
+
+    @Mapping(target = "genre", source = "genre")
+    @Mapping(target = "period", source = "period")
+    void updateEntityFromRequest(WorkRequest request, @MappingTarget Work work);
 }

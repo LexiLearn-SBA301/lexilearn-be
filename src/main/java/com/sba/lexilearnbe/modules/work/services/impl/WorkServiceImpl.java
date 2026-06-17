@@ -1,15 +1,20 @@
 package com.sba.lexilearnbe.modules.work.services.impl;
 
+import com.sba.lexilearnbe.modules.work.dto.request.WorkRequest;
 import com.sba.lexilearnbe.modules.work.dto.response.WorkDetailResponse;
 import com.sba.lexilearnbe.modules.work.dto.response.WorkSummaryResponse;
+import com.sba.lexilearnbe.modules.work.entity.Author;
 import com.sba.lexilearnbe.modules.work.entity.Tag;
 import com.sba.lexilearnbe.modules.work.entity.Work;
 import com.sba.lexilearnbe.modules.work.mapper.WorkMapper;
+import com.sba.lexilearnbe.modules.work.repository.AuthorRepository;
 import com.sba.lexilearnbe.modules.work.repository.WorkRepository;
 import com.sba.lexilearnbe.modules.work.services.WorkService;
+import com.sba.lexilearnbe.modules.work.utils.SlugUtils;
 import com.sba.lexilearnbe.shared.common.exception.ApiException;
 import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,6 +27,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class WorkServiceImpl implements WorkService {
 
+    private final AuthorRepository authorRepository;
     private final WorkRepository workRepository;
     private final WorkMapper workMapper;
 
@@ -49,4 +55,55 @@ public class WorkServiceImpl implements WorkService {
                         .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND))
         );
     }
+    @Override
+    @Transactional
+    public WorkDetailResponse createWork(WorkRequest request) {
+        // 1. Validate xem tác giả truyền lên có thực sự tồn tại không
+        Author author = authorRepository.findById(request.getAuthorId())
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTHOR_NOT_FOUND));
+
+        String slug = SlugUtils.generateSlug(request.getTitle());
+
+        if (workRepository.existsBySlug(slug)) {
+            throw new ApiException(ErrorCode.WORK_ALREADY_EXISTS);
+        }
+
+        Work work = workMapper.toEntity(request);
+        work.setAuthor(author);
+        work.setSlug(slug);
+
+        try {
+            Work savedWork = workRepository.save(work);
+            return workMapper.toDetailResponse(savedWork);
+        } catch (DataIntegrityViolationException e) {
+            throw new ApiException(ErrorCode.WORK_ALREADY_EXISTS);
+        }
+    }
+
+    @Override
+    @Transactional
+    public WorkDetailResponse updateWork(UUID id, WorkRequest request) {
+        Work work = workRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
+        Author author = authorRepository.findById(request.getAuthorId())
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTHOR_NOT_FOUND));
+
+        workMapper.updateEntityFromRequest(request, work);
+        work.setAuthor(author);
+
+        Work updatedWork = workRepository.save(work);
+        return workMapper.toDetailResponse(updatedWork);
+    }
+
+    @Override
+    @Transactional
+    public void deleteWork(UUID id) {
+        Work work = workRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
+
+        // Cẩn thận: Nếu tác phẩm này đã bị Thành viên C tạo "work_sections" (nội dung đọc)
+        // hoặc bị Thành viên D "bookmark", DB sẽ chặn xóa. Nhưng hiện tại chưa làm nên xóa vật lý thoải mái.
+        workRepository.delete(work);
+    }
+
 }

@@ -1,12 +1,9 @@
 package com.sba.lexilearnbe.modules.work.entity;
 
+import com.sba.lexilearnbe.shared.infrastructure.persistence.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
-import java.time.LocalDateTime;
-import java.util.UUID;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "authors")
@@ -14,11 +11,8 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Author {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+@SuperBuilder
+public class Author extends BaseEntity {
 
     @Column(nullable = false, length = 200)
     private String name;
@@ -43,12 +37,4 @@ public class Author {
 
     @Column(name = "portrait_url", length = 500)
     private String portraitUrl;
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
 }
