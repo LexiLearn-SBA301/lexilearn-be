@@ -71,7 +71,7 @@ public class WorkController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PutMapping("/admin/works/{id}")
+    @PatchMapping("/admin/works/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Cập nhật tác phẩm", description = "Yêu cầu quyền ADMIN")
     public ResponseEntity<ApiResponse<WorkDetailResponse>> updateWork(
