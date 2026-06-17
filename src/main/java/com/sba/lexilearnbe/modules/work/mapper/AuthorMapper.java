@@ -4,12 +4,9 @@ import com.sba.lexilearnbe.modules.work.dto.request.AuthorRequest;
 import com.sba.lexilearnbe.modules.work.dto.response.AuthorDetailResponse;
 import com.sba.lexilearnbe.modules.work.dto.response.AuthorSummaryResponse;
 import com.sba.lexilearnbe.modules.work.entity.Author;
-import org.mapstruct.Mapper;
-import org.mapstruct.MappingConstants;
-import org.mapstruct.MappingTarget;
-import org.mapstruct.ReportingPolicy;
+import org.mapstruct.*;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, unmappedTargetPolicy = ReportingPolicy.IGNORE)
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, unmappedTargetPolicy = ReportingPolicy.IGNORE, nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface AuthorMapper {
 
     AuthorSummaryResponse toSummaryResponse(Author author);

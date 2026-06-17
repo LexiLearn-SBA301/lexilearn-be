@@ -11,7 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, unmappedTargetPolicy = ReportingPolicy.IGNORE)
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, unmappedTargetPolicy = ReportingPolicy.IGNORE, nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface WorkMapper {
 
     @Mapping(target = "authorName", source = "work.author.name", defaultValue = "Khuyết danh")
