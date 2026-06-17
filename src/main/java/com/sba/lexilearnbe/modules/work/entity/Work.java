@@ -1,14 +1,11 @@
 package com.sba.lexilearnbe.modules.work.entity;
 
+import com.sba.lexilearnbe.shared.infrastructure.persistence.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
-import java.time.LocalDateTime;
+import lombok.experimental.SuperBuilder;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 
 @Entity
 @Table(name = "works")
@@ -16,11 +13,8 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Work {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+@SuperBuilder
+public class Work extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id", referencedColumnName = "id")
@@ -56,9 +50,11 @@ public class Work {
     @Column(name = "cover_url", length = 500)
     private String coverUrl;
 
+    @Builder.Default
     @Column(name = "is_published", nullable = false)
     private Boolean isPublished = false;
 
+    @Builder.Default
     @Column(name = "view_count", nullable = false)
     private Long viewCount = 0L;
 
@@ -80,14 +76,7 @@ public class Work {
     @Column(name = "quote_attribution", length = 300)
     private String quoteAttribution;
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
+    @Builder.Default
     @ManyToMany
     @JoinTable(
             name = "work_tags",

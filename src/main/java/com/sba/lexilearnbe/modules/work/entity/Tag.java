@@ -1,12 +1,9 @@
 package com.sba.lexilearnbe.modules.work.entity;
 
+import com.sba.lexilearnbe.shared.infrastructure.persistence.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
-import java.time.LocalDateTime;
-import java.util.UUID;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "tags")
@@ -14,12 +11,8 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Tag {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
-
+@SuperBuilder
+public class Tag extends BaseEntity {
     @Column(nullable = false, unique = true, length = 100)
     private String name;
 
@@ -28,12 +21,4 @@ public class Tag {
 
     @Column(columnDefinition = "TEXT")
     private String description;
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
 }
