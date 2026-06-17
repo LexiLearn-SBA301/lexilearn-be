@@ -1,0 +1,150 @@
+package com.sba.lexilearnbe.modules.workdetail.services.impl;
+
+import com.sba.lexilearnbe.modules.work.entity.Work;
+import com.sba.lexilearnbe.modules.work.repository.WorkRepository;
+import com.sba.lexilearnbe.modules.workdetail.dto.request.CreateWorkCharacterRequest;
+import com.sba.lexilearnbe.modules.workdetail.dto.request.ReorderWorkCharactersRequest;
+import com.sba.lexilearnbe.modules.workdetail.dto.request.UpdateWorkCharacterRequest;
+import com.sba.lexilearnbe.modules.workdetail.dto.response.WorkCharacterResponse;
+import com.sba.lexilearnbe.modules.workdetail.entity.WorkCharacter;
+import com.sba.lexilearnbe.modules.workdetail.mapper.WorkCharacterMapper;
+import com.sba.lexilearnbe.modules.workdetail.repository.WorkCharacterRepository;
+import com.sba.lexilearnbe.modules.workdetail.services.WorkCharacterService;
+import com.sba.lexilearnbe.modules.workdetail.util.WorkReadAccessValidator;
+import com.sba.lexilearnbe.shared.common.exception.ApiException;
+import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class WorkCharacterServiceImpl implements WorkCharacterService {
+
+    private final WorkRepository workRepository;
+    private final WorkCharacterRepository workCharacterRepository;
+    private final WorkCharacterMapper workCharacterMapper;
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<WorkCharacterResponse> getCharacters(UUID workId) {
+        requireReadableWork(workId);
+
+        return workCharacterRepository.findAllByWork_IdOrderByDisplayOrderAsc(workId)
+                .stream()
+                .map(workCharacterMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public WorkCharacterResponse createCharacter(UUID workId, CreateWorkCharacterRequest request) {
+        Work work = requireWork(workId);
+
+        WorkCharacter character = WorkCharacter.builder()
+                .work(work)
+                .name(request.getName().trim())
+                .description(request.getDescription())
+                .analysis(request.getAnalysis())
+                .displayOrder(getNextDisplayOrder(workId))
+                .build();
+
+        return workCharacterMapper.toResponse(workCharacterRepository.save(character));
+    }
+
+    @Override
+    @Transactional
+    public WorkCharacterResponse updateCharacter(UUID characterId, UpdateWorkCharacterRequest request) {
+        WorkCharacter character = requireCharacter(characterId);
+
+        if (request.getName() != null) {
+            character.setName(request.getName().trim());
+        }
+        if (request.getDescription() != null) {
+            character.setDescription(request.getDescription());
+        }
+        if (request.getAnalysis() != null) {
+            character.setAnalysis(request.getAnalysis());
+        }
+
+        return workCharacterMapper.toResponse(workCharacterRepository.save(character));
+    }
+
+    @Override
+    @Transactional
+    public void deleteCharacter(UUID characterId) {
+        workCharacterRepository.delete(requireCharacter(characterId));
+    }
+
+    @Override
+    @Transactional
+    public List<WorkCharacterResponse> reorderCharacters(UUID workId, ReorderWorkCharactersRequest request) {
+        requireWork(workId);
+        List<WorkCharacter> characters = workCharacterRepository.findAllByWork_IdOrderByDisplayOrderAsc(workId);
+        validateReorderIds(
+                characters.stream().map(WorkCharacter::getId).collect(Collectors.toSet()),
+                request.getCharacterIds()
+        );
+
+        Map<UUID, WorkCharacter> charactersById = new HashMap<>();
+        characters.forEach(character -> charactersById.put(character.getId(), character));
+
+        int temporaryDisplayOrderStart = workCharacterRepository.findMaxDisplayOrderByWorkId(workId) + 1;
+        for (int index = 0; index < characters.size(); index++) {
+            characters.get(index).setDisplayOrder(temporaryDisplayOrderStart + index);
+        }
+        workCharacterRepository.saveAllAndFlush(characters);
+
+        for (int index = 0; index < request.getCharacterIds().size(); index++) {
+            charactersById.get(request.getCharacterIds().get(index)).setDisplayOrder(index);
+        }
+
+        workCharacterRepository.saveAll(characters);
+
+        return request.getCharacterIds().stream()
+                .map(charactersById::get)
+                .map(workCharacterMapper::toResponse)
+                .toList();
+    }
+
+    private Work requireWork(UUID workId) {
+        return workRepository.findById(workId)
+                .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
+    }
+
+    private Work requireReadableWork(UUID workId) {
+        Work work = requireWork(workId);
+        WorkReadAccessValidator.validate(work);
+        return work;
+    }
+
+    private WorkCharacter requireCharacter(UUID characterId) {
+        return workCharacterRepository.findById(characterId)
+                .orElseThrow(() -> new ApiException(
+                        ErrorCode.RESOURCE_NOT_FOUND,
+                        "Nhân vật không tồn tại"
+                ));
+    }
+
+    private void validateReorderIds(Set<UUID> existingIds, List<UUID> requestedIds) {
+        Set<UUID> requestedUniqueIds = new HashSet<>(requestedIds);
+        if (requestedIds.size() != requestedUniqueIds.size() || !existingIds.equals(requestedUniqueIds)) {
+            throw new ApiException(
+                    ErrorCode.VALIDATION_ERROR,
+                    "Danh sách sắp xếp phải chứa đúng toàn bộ nhân vật của tác phẩm và không được trùng ID"
+            );
+        }
+    }
+
+    private int getNextDisplayOrder(UUID workId) {
+        return workCharacterRepository.findMaxDisplayOrderByWorkId(workId) + 1;
+    }
+}
