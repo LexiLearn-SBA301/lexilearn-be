@@ -67,15 +67,11 @@ public class AdminWorkSectionController {
 
     @DeleteMapping("/sections/{sectionId}")
     @Operation(summary = "Xóa phần văn bản")
-    public ResponseEntity<ApiResponse<Void>> deleteSection(
+    public ResponseEntity<Void> deleteSection(
             @PathVariable UUID sectionId
     ) {
         workSectionService.deleteSection(sectionId);
 
-        ApiResponse<Void> response = ApiResponse.<Void>builder()
-                .message("Xóa phần văn bản thành công")
-                .build();
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -69,16 +69,12 @@ public class AdminWorkCharacterController {
 
     @DeleteMapping("/characters/{characterId}")
     @Operation(summary = "Xóa nhân vật")
-    public ResponseEntity<ApiResponse<Void>> deleteCharacter(
+    public ResponseEntity<Void> deleteCharacter(
             @PathVariable UUID characterId
     ) {
         workCharacterService.deleteCharacter(characterId);
 
-        ApiResponse<Void> response = ApiResponse.<Void>builder()
-                .message("Xóa nhân vật thành công")
-                .build();
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/works/{workId}/characters/sequence")

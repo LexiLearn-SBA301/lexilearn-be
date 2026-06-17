@@ -69,16 +69,12 @@ public class AdminArtisticFeatureController {
 
     @DeleteMapping("/artistic-features/{featureId}")
     @Operation(summary = "Xóa đặc điểm nghệ thuật")
-    public ResponseEntity<ApiResponse<Void>> deleteArtisticFeature(
+    public ResponseEntity<Void> deleteArtisticFeature(
             @PathVariable UUID featureId
     ) {
         artisticFeatureService.deleteArtisticFeature(featureId);
 
-        ApiResponse<Void> response = ApiResponse.<Void>builder()
-                .message("Xóa đặc điểm nghệ thuật thành công")
-                .build();
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/works/{workId}/artistic-features/sequence")
