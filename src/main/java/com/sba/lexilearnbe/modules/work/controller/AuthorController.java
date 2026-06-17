@@ -13,6 +13,7 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -42,7 +43,6 @@ public class AuthorController {
         return ResponseEntity.ok(response);
     }
 
-    // ── ADMIN APIs (Dành cho Quản trị viên) ───────────────────────────────────
     @GetMapping("/authors/{slug}")
     @Operation(summary = "Lấy chi tiết Tác giả", description = "Lấy thông tin chi tiết tiểu sử của tác giả dựa vào slug")
     public ResponseEntity<ApiResponse<AuthorDetailResponse>> getAuthorDetail(@PathVariable String slug) {
@@ -54,11 +54,12 @@ public class AuthorController {
 
         return ResponseEntity.ok(response);
     }
+    // ── ADMIN APIs (Dành cho Quản trị viên) ───────────────────────────────────
     @PostMapping("/admin/authors")
-    @PreAuthorize("hasRole('ADMIN')") // Phụ thuộc vào config role của Thành viên A
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Tạo mới tác giả", description = "Yêu cầu quyền ADMIN")
     public ResponseEntity<ApiResponse<AuthorDetailResponse>> createAuthor(@Valid @RequestBody AuthorRequest request) {
-        return ResponseEntity.ok(ApiResponse.<AuthorDetailResponse>builder()
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.<AuthorDetailResponse>builder()
                 .message("Tạo mới tác giả thành công")
                 .result(authorService.createAuthor(request))
                 .build());
@@ -83,8 +84,6 @@ public class AuthorController {
     public ResponseEntity<ApiResponse<Void>> deleteAuthor(@PathVariable UUID id) {
         authorService.deleteAuthor(id);
 
-        return ResponseEntity.ok(ApiResponse.<Void>builder()
-                .message("Xóa tác giả thành công")
-                .build());
+        return ResponseEntity.noContent().build();
     }
 }

@@ -8,17 +8,16 @@ import com.sba.lexilearnbe.modules.work.mapper.AuthorMapper;
 import com.sba.lexilearnbe.modules.work.repository.AuthorRepository;
 import com.sba.lexilearnbe.modules.work.repository.WorkRepository;
 import com.sba.lexilearnbe.modules.work.services.AuthorService;
+import com.sba.lexilearnbe.modules.work.utils.SlugUtils;
 import com.sba.lexilearnbe.shared.common.exception.ApiException;
 import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.text.Normalizer;
 import java.util.UUID;
-import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -48,7 +47,7 @@ public class AuthorServiceImpl implements AuthorService {
     public AuthorDetailResponse createAuthor(AuthorRequest request) {
         validateAuthorYears(request.getBirthYear(), request.getDeathYear());
 
-        String slug = generateSlug(request.getName());
+        String slug = SlugUtils.generateSlug(request.getName());
         if (authorRepository.existsBySlug(slug)) {
             throw new ApiException(ErrorCode.AUTHOR_ALREADY_EXISTS);
         }
@@ -56,8 +55,12 @@ public class AuthorServiceImpl implements AuthorService {
         Author author = authorMapper.toEntity(request);
         author.setSlug(slug);
 
-        Author savedAuthor = authorRepository.save(author);
-        return authorMapper.toDetailResponse(savedAuthor);
+        try {
+            Author savedAuthor = authorRepository.save(author);
+            return authorMapper.toDetailResponse(savedAuthor);
+        } catch (DataIntegrityViolationException e) {
+            throw new ApiException(ErrorCode.AUTHOR_ALREADY_EXISTS);
+        }
     }
     @Override
     @Transactional
@@ -96,19 +99,5 @@ public class AuthorServiceImpl implements AuthorService {
         if (birthYear != null && deathYear != null && deathYear < birthYear) {
             throw new ApiException(ErrorCode.VALIDATION_ERROR, "Năm mất không được nhỏ hơn năm sinh");
         }
-    }
-    private String generateSlug(String input) {
-        if (input == null || input.trim().isEmpty()) {
-            return "";
-        }
-
-        // Bước 1: Lột dấu Tiếng Việt (Normalize)
-        String normalized = Normalizer.normalize(input, Normalizer.Form.NFD);
-        Pattern pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
-        String slug = pattern.matcher(normalized).replaceAll("");
-        slug = slug.replaceAll("Đ", "D").replaceAll("đ", "d");
-        return slug.toLowerCase()
-                .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("^-|-$", "");
     }
 }

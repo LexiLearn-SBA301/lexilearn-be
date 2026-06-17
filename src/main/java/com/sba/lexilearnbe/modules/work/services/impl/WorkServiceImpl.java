@@ -10,9 +10,11 @@ import com.sba.lexilearnbe.modules.work.mapper.WorkMapper;
 import com.sba.lexilearnbe.modules.work.repository.AuthorRepository;
 import com.sba.lexilearnbe.modules.work.repository.WorkRepository;
 import com.sba.lexilearnbe.modules.work.services.WorkService;
+import com.sba.lexilearnbe.modules.work.utils.SlugUtils;
 import com.sba.lexilearnbe.shared.common.exception.ApiException;
 import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -60,20 +62,22 @@ public class WorkServiceImpl implements WorkService {
         Author author = authorRepository.findById(request.getAuthorId())
                 .orElseThrow(() -> new ApiException(ErrorCode.AUTHOR_NOT_FOUND));
 
-        // 2. Sinh slug THUẦN TÚY từ tiêu đề (Không cộng đuôi thời gian nữa)
-        String slug = generateSlug(request.getTitle());
+        String slug = SlugUtils.generateSlug(request.getTitle());
 
-        // 3. Bây giờ hàm này mới phát huy tác dụng nè!
         if (workRepository.existsBySlug(slug)) {
             throw new ApiException(ErrorCode.WORK_ALREADY_EXISTS);
         }
 
         Work work = workMapper.toEntity(request);
         work.setAuthor(author);
-        work.setSlug(slug); // Gán cái slug chuẩn vào
+        work.setSlug(slug);
 
-        Work savedWork = workRepository.save(work);
-        return workMapper.toDetailResponse(savedWork);
+        try {
+            Work savedWork = workRepository.save(work);
+            return workMapper.toDetailResponse(savedWork);
+        } catch (DataIntegrityViolationException e) {
+            throw new ApiException(ErrorCode.WORK_ALREADY_EXISTS);
+        }
     }
 
     @Override
@@ -98,19 +102,8 @@ public class WorkServiceImpl implements WorkService {
                 .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
 
         // Cẩn thận: Nếu tác phẩm này đã bị Thành viên C tạo "work_sections" (nội dung đọc)
-        // hoặc bị Thành viên D "bookmark", DB sẽ chặn xóa. Nhưng hiện tại họ chưa làm nên bác xóa vật lý thoải mái.
+        // hoặc bị Thành viên D "bookmark", DB sẽ chặn xóa. Nhưng hiện tại chưa làm nên xóa vật lý thoải mái.
         workRepository.delete(work);
     }
 
-    // Hàm sinh slug giống bên Author
-    private String generateSlug(String input) {
-        if (input == null || input.trim().isEmpty()) return "";
-        String normalized = java.text.Normalizer.normalize(input, java.text.Normalizer.Form.NFD);
-        return java.util.regex.Pattern.compile("\\p{InCombiningDiacriticalMarks}+")
-                .matcher(normalized).replaceAll("")
-                .replaceAll("Đ", "D").replaceAll("đ", "d")
-                .toLowerCase()
-                .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("^-|-$", "");
-    }
 }

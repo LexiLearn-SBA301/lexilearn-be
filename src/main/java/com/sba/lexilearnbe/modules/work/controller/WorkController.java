@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -56,6 +57,7 @@ public class WorkController {
 
         return ResponseEntity.ok(response);
     }
+    // ── ADMIN APIs (Dành cho Quản trị viên) ───────────────────────────────────
     @PostMapping("/admin/works")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Tạo mới tác phẩm", description = "Yêu cầu quyền ADMIN")
@@ -66,7 +68,7 @@ public class WorkController {
                 .result(workService.createWork(request))
                 .build();
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/admin/works/{id}")
@@ -91,10 +93,6 @@ public class WorkController {
 
         workService.deleteWork(id);
 
-        ApiResponse<Void> response = ApiResponse.<Void>builder()
-                .message("Xóa tác phẩm thành công")
-                .build();
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.noContent().build();
     }
 }

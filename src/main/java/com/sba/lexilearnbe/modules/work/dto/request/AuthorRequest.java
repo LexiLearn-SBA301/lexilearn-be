@@ -21,10 +21,8 @@ public class AuthorRequest {
     @Size(max = 100, message = "Bút danh không được vượt quá 100 ký tự")
     private String penName;
 
-    @Max(value = 2026, message = "Năm sinh không hợp lệ")
     private Integer birthYear;
 
-    @Max(value = 2026, message = "Năm mất không được lớn hơn năm hiện tại")
     private Integer deathYear;
 
     @Pattern(regexp = "^(dan_gian|trung_dai|hien_dai)$",
