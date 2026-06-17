@@ -1,7 +1,6 @@
 package com.sba.lexilearnbe.modules.workdetail.dto.request;
 
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,7 +23,4 @@ public class UpdateArtisticFeatureRequest {
             message = "Nội dung đặc điểm nghệ thuật không được để trống"
     )
     private String content;
-
-    @PositiveOrZero(message = "Thứ tự hiển thị không được nhỏ hơn 0")
-    private Integer displayOrder;
 }

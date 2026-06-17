@@ -30,6 +30,8 @@ CREATE TABLE characters (
 
     CONSTRAINT fk_characters_work
         FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE,
+    CONSTRAINT uq_characters_work_display_order
+        UNIQUE (work_id, display_order),
     CONSTRAINT chk_characters_display_order
         CHECK (display_order >= 0)
 );
@@ -45,18 +47,14 @@ CREATE TABLE artistic_features (
 
     CONSTRAINT fk_artistic_features_work
         FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE,
+    CONSTRAINT uq_artistic_features_work_display_order
+        UNIQUE (work_id, display_order),
     CONSTRAINT chk_artistic_features_display_order
         CHECK (display_order >= 0)
 );
 
 CREATE INDEX idx_work_sections_work_number
     ON work_sections(work_id, number);
-
-CREATE INDEX idx_characters_work_display_order
-    ON characters(work_id, display_order);
-
-CREATE INDEX idx_artistic_features_work_display_order
-    ON artistic_features(work_id, display_order);
 
 CREATE TRIGGER tr_work_sections_updated_at
     BEFORE UPDATE ON work_sections

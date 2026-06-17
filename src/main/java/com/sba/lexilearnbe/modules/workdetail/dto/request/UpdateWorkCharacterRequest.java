@@ -1,7 +1,6 @@
 package com.sba.lexilearnbe.modules.workdetail.dto.request;
 
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,7 +25,4 @@ public class UpdateWorkCharacterRequest {
             message = "Phân tích nhân vật không được để trống"
     )
     private String analysis;
-
-    @PositiveOrZero(message = "Thứ tự hiển thị không được nhỏ hơn 0")
-    private Integer displayOrder;
 }

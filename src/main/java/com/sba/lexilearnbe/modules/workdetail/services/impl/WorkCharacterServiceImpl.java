@@ -47,12 +47,14 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
     @Override
     @Transactional
     public WorkCharacterResponse createCharacter(UUID workId, CreateWorkCharacterRequest request) {
+        Work work = requireWork(workId);
+
         WorkCharacter character = WorkCharacter.builder()
-                .work(requireWork(workId))
+                .work(work)
                 .name(request.getName().trim())
                 .description(request.getDescription())
                 .analysis(request.getAnalysis())
-                .displayOrder(request.getDisplayOrder())
+                .displayOrder(getNextDisplayOrder(workId))
                 .build();
 
         return workCharacterMapper.toResponse(workCharacterRepository.save(character));
@@ -71,9 +73,6 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
         }
         if (request.getAnalysis() != null) {
             character.setAnalysis(request.getAnalysis());
-        }
-        if (request.getDisplayOrder() != null) {
-            character.setDisplayOrder(request.getDisplayOrder());
         }
 
         return workCharacterMapper.toResponse(workCharacterRepository.save(character));
@@ -97,6 +96,12 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
 
         Map<UUID, WorkCharacter> charactersById = new HashMap<>();
         characters.forEach(character -> charactersById.put(character.getId(), character));
+
+        int temporaryDisplayOrderStart = workCharacterRepository.findMaxDisplayOrderByWorkId(workId) + 1;
+        for (int index = 0; index < characters.size(); index++) {
+            characters.get(index).setDisplayOrder(temporaryDisplayOrderStart + index);
+        }
+        workCharacterRepository.saveAllAndFlush(characters);
 
         for (int index = 0; index < request.getCharacterIds().size(); index++) {
             charactersById.get(request.getCharacterIds().get(index)).setDisplayOrder(index);
@@ -137,5 +142,9 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
                     "Danh sách sắp xếp phải chứa đúng toàn bộ nhân vật của tác phẩm và không được trùng ID"
             );
         }
+    }
+
+    private int getNextDisplayOrder(UUID workId) {
+        return workCharacterRepository.findMaxDisplayOrderByWorkId(workId) + 1;
     }
 }

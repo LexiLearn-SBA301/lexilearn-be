@@ -47,11 +47,13 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
     @Override
     @Transactional
     public ArtisticFeatureResponse createArtisticFeature(UUID workId, CreateArtisticFeatureRequest request) {
+        Work work = requireWork(workId);
+
         ArtisticFeature feature = ArtisticFeature.builder()
-                .work(requireWork(workId))
+                .work(work)
                 .title(request.getTitle().trim())
                 .content(request.getContent())
-                .displayOrder(request.getDisplayOrder())
+                .displayOrder(getNextDisplayOrder(workId))
                 .build();
 
         return artisticFeatureMapper.toResponse(artisticFeatureRepository.save(feature));
@@ -67,9 +69,6 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
         }
         if (request.getContent() != null) {
             feature.setContent(request.getContent());
-        }
-        if (request.getDisplayOrder() != null) {
-            feature.setDisplayOrder(request.getDisplayOrder());
         }
 
         return artisticFeatureMapper.toResponse(artisticFeatureRepository.save(feature));
@@ -94,6 +93,12 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
 
         Map<UUID, ArtisticFeature> featuresById = new HashMap<>();
         features.forEach(feature -> featuresById.put(feature.getId(), feature));
+
+        int temporaryDisplayOrderStart = artisticFeatureRepository.findMaxDisplayOrderByWorkId(workId) + 1;
+        for (int index = 0; index < features.size(); index++) {
+            features.get(index).setDisplayOrder(temporaryDisplayOrderStart + index);
+        }
+        artisticFeatureRepository.saveAllAndFlush(features);
 
         for (int index = 0; index < request.getFeatureIds().size(); index++) {
             featuresById.get(request.getFeatureIds().get(index)).setDisplayOrder(index);
@@ -134,5 +139,9 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
                     "Danh sách sắp xếp phải chứa đúng toàn bộ đặc điểm nghệ thuật và không được trùng ID"
             );
         }
+    }
+
+    private int getNextDisplayOrder(UUID workId) {
+        return artisticFeatureRepository.findMaxDisplayOrderByWorkId(workId) + 1;
     }
 }
