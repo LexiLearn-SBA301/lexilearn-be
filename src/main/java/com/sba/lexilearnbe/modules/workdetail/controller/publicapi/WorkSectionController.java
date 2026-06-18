@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -36,7 +35,6 @@ public class WorkSectionController {
                 ApiResponse.<List<WorkSectionSummaryResponse>>builder()
                         .message("Lấy danh sách phần văn bản thành công")
                         .result(result)
-                        .timestamp(LocalDateTime.now())
                         .build();
 
         return ResponseEntity.ok(response);
@@ -53,7 +51,6 @@ public class WorkSectionController {
                 ApiResponse.<WorkSectionDetailResponse>builder()
                         .message("Lấy nội dung phần văn bản thành công")
                         .result(result)
-                        .timestamp(LocalDateTime.now())
                         .build();
 
         return ResponseEntity.ok(response);

@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @RestController
@@ -44,7 +43,6 @@ public class AdminArtisticFeatureController {
                 ApiResponse.<ArtisticFeatureResponse>builder()
                         .message("Tạo đặc điểm nghệ thuật thành công")
                         .result(result)
-                        .timestamp(LocalDateTime.now())
                         .build();
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -62,7 +60,6 @@ public class AdminArtisticFeatureController {
                 ApiResponse.<ArtisticFeatureResponse>builder()
                         .message("Cập nhật đặc điểm nghệ thuật thành công")
                         .result(result)
-                        .timestamp(LocalDateTime.now())
                         .build();
 
         return ResponseEntity.ok(response);
@@ -70,17 +67,12 @@ public class AdminArtisticFeatureController {
 
     @DeleteMapping("/artistic-features/{featureId}")
     @Operation(summary = "Xóa đặc điểm nghệ thuật")
-    public ResponseEntity<ApiResponse<Void>> deleteArtisticFeature(
+    public ResponseEntity<Void> deleteArtisticFeature(
             @PathVariable UUID featureId
     ) {
         artisticFeatureService.deleteArtisticFeature(featureId);
 
-        ApiResponse<Void> response = ApiResponse.<Void>builder()
-                .message("Xóa đặc điểm nghệ thuật thành công")
-                .timestamp(LocalDateTime.now())
-                .build();
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.noContent().build();
     }
 
 }
