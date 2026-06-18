@@ -8,7 +8,6 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,13 +15,7 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 @Entity
-@Table(
-        name = "artistic_features",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uq_artistic_features_work_display_order",
-                columnNames = {"work_id", "display_order"}
-        )
-)
+@Table(name = "artistic_features")
 @Getter
 @Setter
 @SuperBuilder

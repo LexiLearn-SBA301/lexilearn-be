@@ -1,7 +1,6 @@
 package com.sba.lexilearnbe.modules.workdetail.controller.admin;
 
 import com.sba.lexilearnbe.modules.workdetail.dto.request.CreateWorkCharacterRequest;
-import com.sba.lexilearnbe.modules.workdetail.dto.request.ReorderWorkCharactersRequest;
 import com.sba.lexilearnbe.modules.workdetail.dto.request.UpdateWorkCharacterRequest;
 import com.sba.lexilearnbe.modules.workdetail.dto.response.WorkCharacterResponse;
 import com.sba.lexilearnbe.modules.workdetail.services.WorkCharacterService;
@@ -21,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @RestController
@@ -45,6 +44,7 @@ public class AdminWorkCharacterController {
                 ApiResponse.<WorkCharacterResponse>builder()
                         .message("Tạo nhân vật thành công")
                         .result(result)
+                        .timestamp(LocalDateTime.now())
                         .build();
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -62,6 +62,7 @@ public class AdminWorkCharacterController {
                 ApiResponse.<WorkCharacterResponse>builder()
                         .message("Cập nhật nhân vật thành công")
                         .result(result)
+                        .timestamp(LocalDateTime.now())
                         .build();
 
         return ResponseEntity.ok(response);
@@ -69,28 +70,17 @@ public class AdminWorkCharacterController {
 
     @DeleteMapping("/characters/{characterId}")
     @Operation(summary = "Xóa nhân vật")
-    public ResponseEntity<Void> deleteCharacter(
+    public ResponseEntity<ApiResponse<Void>> deleteCharacter(
             @PathVariable UUID characterId
     ) {
         workCharacterService.deleteCharacter(characterId);
 
-        return ResponseEntity.noContent().build();
-    }
-
-    @PatchMapping("/works/{workId}/characters/sequence")
-    @Operation(summary = "Sắp xếp lại thứ tự nhân vật")
-    public ResponseEntity<ApiResponse<List<WorkCharacterResponse>>> reorderCharacters(
-            @PathVariable UUID workId,
-            @Valid @RequestBody ReorderWorkCharactersRequest request
-    ) {
-        List<WorkCharacterResponse> result = workCharacterService.reorderCharacters(workId, request);
-
-        ApiResponse<List<WorkCharacterResponse>> response =
-                ApiResponse.<List<WorkCharacterResponse>>builder()
-                        .message("Sắp xếp thứ tự nhân vật thành công")
-                        .result(result)
-                        .build();
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .message("Xóa nhân vật thành công")
+                .timestamp(LocalDateTime.now())
+                .build();
 
         return ResponseEntity.ok(response);
     }
+
 }

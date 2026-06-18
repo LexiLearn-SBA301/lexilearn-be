@@ -3,7 +3,6 @@ package com.sba.lexilearnbe.modules.workdetail.services.impl;
 import com.sba.lexilearnbe.modules.work.entity.Work;
 import com.sba.lexilearnbe.modules.work.repository.WorkRepository;
 import com.sba.lexilearnbe.modules.workdetail.dto.request.CreateArtisticFeatureRequest;
-import com.sba.lexilearnbe.modules.workdetail.dto.request.ReorderArtisticFeaturesRequest;
 import com.sba.lexilearnbe.modules.workdetail.dto.request.UpdateArtisticFeatureRequest;
 import com.sba.lexilearnbe.modules.workdetail.dto.response.ArtisticFeatureResponse;
 import com.sba.lexilearnbe.modules.workdetail.entity.ArtisticFeature;
@@ -17,13 +16,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +28,6 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
     private final ArtisticFeatureMapper artisticFeatureMapper;
 
     @Override
-    @Transactional(readOnly = true)
     public List<ArtisticFeatureResponse> getArtisticFeatures(UUID workId) {
         requireReadableWork(workId);
 
@@ -47,6 +40,7 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
     @Override
     @Transactional
     public ArtisticFeatureResponse createArtisticFeature(UUID workId, CreateArtisticFeatureRequest request) {
+        validateRequest(request);
         Work work = requireWork(workId);
 
         ArtisticFeature feature = ArtisticFeature.builder()
@@ -62,6 +56,7 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
     @Override
     @Transactional
     public ArtisticFeatureResponse updateArtisticFeature(UUID featureId, UpdateArtisticFeatureRequest request) {
+        validateRequest(request);
         ArtisticFeature feature = requireFeature(featureId);
 
         if (request.getTitle() != null) {
@@ -80,39 +75,9 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
         artisticFeatureRepository.delete(requireFeature(featureId));
     }
 
-    @Override
-    @Transactional
-    public List<ArtisticFeatureResponse> reorderArtisticFeatures(UUID workId, ReorderArtisticFeaturesRequest request) {
-        requireWork(workId);
-        List<ArtisticFeature> features =
-                artisticFeatureRepository.findAllByWork_IdOrderByDisplayOrderAsc(workId);
-        validateReorderIds(
-                features.stream().map(ArtisticFeature::getId).collect(Collectors.toSet()),
-                request.getFeatureIds()
-        );
-
-        Map<UUID, ArtisticFeature> featuresById = new HashMap<>();
-        features.forEach(feature -> featuresById.put(feature.getId(), feature));
-
-        int temporaryDisplayOrderStart = artisticFeatureRepository.findMaxDisplayOrderByWorkId(workId) + 1;
-        for (int index = 0; index < features.size(); index++) {
-            features.get(index).setDisplayOrder(temporaryDisplayOrderStart + index);
-        }
-        artisticFeatureRepository.saveAllAndFlush(features);
-
-        for (int index = 0; index < request.getFeatureIds().size(); index++) {
-            featuresById.get(request.getFeatureIds().get(index)).setDisplayOrder(index);
-        }
-
-        artisticFeatureRepository.saveAll(features);
-
-        return request.getFeatureIds().stream()
-                .map(featuresById::get)
-                .map(artisticFeatureMapper::toResponse)
-                .toList();
-    }
-
     private Work requireWork(UUID workId) {
+        validateId(workId, "workId");
+
         return workRepository.findById(workId)
                 .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
     }
@@ -124,6 +89,8 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
     }
 
     private ArtisticFeature requireFeature(UUID featureId) {
+        validateId(featureId, "featureId");
+
         return artisticFeatureRepository.findById(featureId)
                 .orElseThrow(() -> new ApiException(
                         ErrorCode.RESOURCE_NOT_FOUND,
@@ -131,17 +98,19 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
                 ));
     }
 
-    private void validateReorderIds(Set<UUID> existingIds, List<UUID> requestedIds) {
-        Set<UUID> requestedUniqueIds = new HashSet<>(requestedIds);
-        if (requestedIds.size() != requestedUniqueIds.size() || !existingIds.equals(requestedUniqueIds)) {
-            throw new ApiException(
-                    ErrorCode.VALIDATION_ERROR,
-                    "Danh sách sắp xếp phải chứa đúng toàn bộ đặc điểm nghệ thuật và không được trùng ID"
-            );
+    private int getNextDisplayOrder(UUID workId) {
+        return artisticFeatureRepository.findMaxDisplayOrderByWorkId(workId) + 1;
+    }
+
+    private void validateId(UUID id, String fieldName) {
+        if (id == null) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR, fieldName + " không được để trống");
         }
     }
 
-    private int getNextDisplayOrder(UUID workId) {
-        return artisticFeatureRepository.findMaxDisplayOrderByWorkId(workId) + 1;
+    private void validateRequest(Object request) {
+        if (request == null) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR, "Request không được để trống");
+        }
     }
 }

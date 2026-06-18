@@ -1,7 +1,6 @@
 package com.sba.lexilearnbe.modules.workdetail.controller.admin;
 
 import com.sba.lexilearnbe.modules.workdetail.dto.request.CreateArtisticFeatureRequest;
-import com.sba.lexilearnbe.modules.workdetail.dto.request.ReorderArtisticFeaturesRequest;
 import com.sba.lexilearnbe.modules.workdetail.dto.request.UpdateArtisticFeatureRequest;
 import com.sba.lexilearnbe.modules.workdetail.dto.response.ArtisticFeatureResponse;
 import com.sba.lexilearnbe.modules.workdetail.services.ArtisticFeatureService;
@@ -21,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @RestController
@@ -45,6 +44,7 @@ public class AdminArtisticFeatureController {
                 ApiResponse.<ArtisticFeatureResponse>builder()
                         .message("Tạo đặc điểm nghệ thuật thành công")
                         .result(result)
+                        .timestamp(LocalDateTime.now())
                         .build();
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -62,6 +62,7 @@ public class AdminArtisticFeatureController {
                 ApiResponse.<ArtisticFeatureResponse>builder()
                         .message("Cập nhật đặc điểm nghệ thuật thành công")
                         .result(result)
+                        .timestamp(LocalDateTime.now())
                         .build();
 
         return ResponseEntity.ok(response);
@@ -69,29 +70,17 @@ public class AdminArtisticFeatureController {
 
     @DeleteMapping("/artistic-features/{featureId}")
     @Operation(summary = "Xóa đặc điểm nghệ thuật")
-    public ResponseEntity<Void> deleteArtisticFeature(
+    public ResponseEntity<ApiResponse<Void>> deleteArtisticFeature(
             @PathVariable UUID featureId
     ) {
         artisticFeatureService.deleteArtisticFeature(featureId);
 
-        return ResponseEntity.noContent().build();
-    }
-
-    @PatchMapping("/works/{workId}/artistic-features/sequence")
-    @Operation(summary = "Sắp xếp lại thứ tự đặc điểm nghệ thuật")
-    public ResponseEntity<ApiResponse<List<ArtisticFeatureResponse>>> reorderArtisticFeatures(
-            @PathVariable UUID workId,
-            @Valid @RequestBody ReorderArtisticFeaturesRequest request
-    ) {
-        List<ArtisticFeatureResponse> result =
-                artisticFeatureService.reorderArtisticFeatures(workId, request);
-
-        ApiResponse<List<ArtisticFeatureResponse>> response =
-                ApiResponse.<List<ArtisticFeatureResponse>>builder()
-                        .message("Sắp xếp thứ tự đặc điểm nghệ thuật thành công")
-                        .result(result)
-                        .build();
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .message("Xóa đặc điểm nghệ thuật thành công")
+                .timestamp(LocalDateTime.now())
+                .build();
 
         return ResponseEntity.ok(response);
     }
+
 }

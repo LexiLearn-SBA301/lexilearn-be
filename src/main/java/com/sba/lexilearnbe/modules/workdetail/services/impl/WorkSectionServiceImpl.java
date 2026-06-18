@@ -30,7 +30,6 @@ public class WorkSectionServiceImpl implements WorkSectionService {
     private final WorkSectionMapper workSectionMapper;
 
     @Override
-    @Transactional(readOnly = true)
     public List<WorkSectionSummaryResponse> getSections(UUID workId) {
         requireReadableWork(workId);
 
@@ -41,7 +40,6 @@ public class WorkSectionServiceImpl implements WorkSectionService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public WorkSectionDetailResponse getSection(UUID sectionId) {
         WorkSection section = requireSection(sectionId);
         WorkReadAccessValidator.validate(section.getWork());
@@ -52,6 +50,7 @@ public class WorkSectionServiceImpl implements WorkSectionService {
     @Override
     @Transactional
     public WorkSectionDetailResponse createSection(UUID workId, CreateWorkSectionRequest request) {
+        validateRequest(request);
         Work work = requireWork(workId);
         Integer sectionNumber = request.getNumber() != null
                 ? request.getNumber()
@@ -73,6 +72,7 @@ public class WorkSectionServiceImpl implements WorkSectionService {
     @Override
     @Transactional
     public WorkSectionDetailResponse updateSection(UUID sectionId, UpdateWorkSectionRequest request) {
+        validateRequest(request);
         WorkSection section = requireSection(sectionId);
 
         if (request.getNumber() != null) {
@@ -97,6 +97,8 @@ public class WorkSectionServiceImpl implements WorkSectionService {
     }
 
     private Work requireWork(UUID workId) {
+        validateId(workId, "workId");
+
         return workRepository.findById(workId)
                 .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
     }
@@ -108,6 +110,8 @@ public class WorkSectionServiceImpl implements WorkSectionService {
     }
 
     private WorkSection requireSection(UUID sectionId) {
+        validateId(sectionId, "sectionId");
+
         return workSectionRepository.findById(sectionId)
                 .orElseThrow(() -> new ApiException(ErrorCode.SECTION_NOT_FOUND));
     }
@@ -127,5 +131,17 @@ public class WorkSectionServiceImpl implements WorkSectionService {
 
     private int getNextNumber(UUID workId) {
         return workSectionRepository.findMaxNumberByWorkId(workId) + 1;
+    }
+
+    private void validateId(UUID id, String fieldName) {
+        if (id == null) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR, fieldName + " không được để trống");
+        }
+    }
+
+    private void validateRequest(Object request) {
+        if (request == null) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR, "Request không được để trống");
+        }
     }
 }

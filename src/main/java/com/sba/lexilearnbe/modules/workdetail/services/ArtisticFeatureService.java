@@ -1,7 +1,6 @@
 package com.sba.lexilearnbe.modules.workdetail.services;
 
 import com.sba.lexilearnbe.modules.workdetail.dto.request.CreateArtisticFeatureRequest;
-import com.sba.lexilearnbe.modules.workdetail.dto.request.ReorderArtisticFeaturesRequest;
 import com.sba.lexilearnbe.modules.workdetail.dto.request.UpdateArtisticFeatureRequest;
 import com.sba.lexilearnbe.modules.workdetail.dto.response.ArtisticFeatureResponse;
 
@@ -17,6 +16,4 @@ public interface ArtisticFeatureService {
     ArtisticFeatureResponse updateArtisticFeature(UUID featureId, UpdateArtisticFeatureRequest request);
 
     void deleteArtisticFeature(UUID featureId);
-
-    List<ArtisticFeatureResponse> reorderArtisticFeatures(UUID workId, ReorderArtisticFeaturesRequest request);
 }

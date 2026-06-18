@@ -3,7 +3,6 @@ package com.sba.lexilearnbe.modules.workdetail.services.impl;
 import com.sba.lexilearnbe.modules.work.entity.Work;
 import com.sba.lexilearnbe.modules.work.repository.WorkRepository;
 import com.sba.lexilearnbe.modules.workdetail.dto.request.CreateWorkCharacterRequest;
-import com.sba.lexilearnbe.modules.workdetail.dto.request.ReorderWorkCharactersRequest;
 import com.sba.lexilearnbe.modules.workdetail.dto.request.UpdateWorkCharacterRequest;
 import com.sba.lexilearnbe.modules.workdetail.dto.response.WorkCharacterResponse;
 import com.sba.lexilearnbe.modules.workdetail.entity.WorkCharacter;
@@ -17,13 +16,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +28,6 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
     private final WorkCharacterMapper workCharacterMapper;
 
     @Override
-    @Transactional(readOnly = true)
     public List<WorkCharacterResponse> getCharacters(UUID workId) {
         requireReadableWork(workId);
 
@@ -47,6 +40,7 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
     @Override
     @Transactional
     public WorkCharacterResponse createCharacter(UUID workId, CreateWorkCharacterRequest request) {
+        validateRequest(request);
         Work work = requireWork(workId);
 
         WorkCharacter character = WorkCharacter.builder()
@@ -63,6 +57,7 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
     @Override
     @Transactional
     public WorkCharacterResponse updateCharacter(UUID characterId, UpdateWorkCharacterRequest request) {
+        validateRequest(request);
         WorkCharacter character = requireCharacter(characterId);
 
         if (request.getName() != null) {
@@ -84,38 +79,9 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
         workCharacterRepository.delete(requireCharacter(characterId));
     }
 
-    @Override
-    @Transactional
-    public List<WorkCharacterResponse> reorderCharacters(UUID workId, ReorderWorkCharactersRequest request) {
-        requireWork(workId);
-        List<WorkCharacter> characters = workCharacterRepository.findAllByWork_IdOrderByDisplayOrderAsc(workId);
-        validateReorderIds(
-                characters.stream().map(WorkCharacter::getId).collect(Collectors.toSet()),
-                request.getCharacterIds()
-        );
-
-        Map<UUID, WorkCharacter> charactersById = new HashMap<>();
-        characters.forEach(character -> charactersById.put(character.getId(), character));
-
-        int temporaryDisplayOrderStart = workCharacterRepository.findMaxDisplayOrderByWorkId(workId) + 1;
-        for (int index = 0; index < characters.size(); index++) {
-            characters.get(index).setDisplayOrder(temporaryDisplayOrderStart + index);
-        }
-        workCharacterRepository.saveAllAndFlush(characters);
-
-        for (int index = 0; index < request.getCharacterIds().size(); index++) {
-            charactersById.get(request.getCharacterIds().get(index)).setDisplayOrder(index);
-        }
-
-        workCharacterRepository.saveAll(characters);
-
-        return request.getCharacterIds().stream()
-                .map(charactersById::get)
-                .map(workCharacterMapper::toResponse)
-                .toList();
-    }
-
     private Work requireWork(UUID workId) {
+        validateId(workId, "workId");
+
         return workRepository.findById(workId)
                 .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
     }
@@ -127,6 +93,8 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
     }
 
     private WorkCharacter requireCharacter(UUID characterId) {
+        validateId(characterId, "characterId");
+
         return workCharacterRepository.findById(characterId)
                 .orElseThrow(() -> new ApiException(
                         ErrorCode.RESOURCE_NOT_FOUND,
@@ -134,17 +102,19 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
                 ));
     }
 
-    private void validateReorderIds(Set<UUID> existingIds, List<UUID> requestedIds) {
-        Set<UUID> requestedUniqueIds = new HashSet<>(requestedIds);
-        if (requestedIds.size() != requestedUniqueIds.size() || !existingIds.equals(requestedUniqueIds)) {
-            throw new ApiException(
-                    ErrorCode.VALIDATION_ERROR,
-                    "Danh sách sắp xếp phải chứa đúng toàn bộ nhân vật của tác phẩm và không được trùng ID"
-            );
+    private int getNextDisplayOrder(UUID workId) {
+        return workCharacterRepository.findMaxDisplayOrderByWorkId(workId) + 1;
+    }
+
+    private void validateId(UUID id, String fieldName) {
+        if (id == null) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR, fieldName + " không được để trống");
         }
     }
 
-    private int getNextDisplayOrder(UUID workId) {
-        return workCharacterRepository.findMaxDisplayOrderByWorkId(workId) + 1;
+    private void validateRequest(Object request) {
+        if (request == null) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR, "Request không được để trống");
+        }
     }
 }

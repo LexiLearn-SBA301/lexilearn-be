@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @RestController
@@ -43,6 +44,7 @@ public class AdminWorkSectionController {
                 ApiResponse.<WorkSectionDetailResponse>builder()
                         .message("Tạo phần văn bản thành công")
                         .result(result)
+                        .timestamp(LocalDateTime.now())
                         .build();
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -60,6 +62,7 @@ public class AdminWorkSectionController {
                 ApiResponse.<WorkSectionDetailResponse>builder()
                         .message("Cập nhật phần văn bản thành công")
                         .result(result)
+                        .timestamp(LocalDateTime.now())
                         .build();
 
         return ResponseEntity.ok(response);
@@ -67,11 +70,16 @@ public class AdminWorkSectionController {
 
     @DeleteMapping("/sections/{sectionId}")
     @Operation(summary = "Xóa phần văn bản")
-    public ResponseEntity<Void> deleteSection(
+    public ResponseEntity<ApiResponse<Void>> deleteSection(
             @PathVariable UUID sectionId
     ) {
         workSectionService.deleteSection(sectionId);
 
-        return ResponseEntity.noContent().build();
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .message("Xóa phần văn bản thành công")
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity.ok(response);
     }
 }
