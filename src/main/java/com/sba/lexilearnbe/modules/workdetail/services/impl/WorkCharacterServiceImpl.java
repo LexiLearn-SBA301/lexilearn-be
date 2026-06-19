@@ -28,6 +28,7 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
     private final WorkCharacterMapper workCharacterMapper;
 
     @Override
+    @Transactional(readOnly = true)
     public List<WorkCharacterResponse> getCharacters(UUID workId) {
         requireReadableWork(workId);
 
@@ -40,7 +41,7 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
     @Override
     @Transactional
     public WorkCharacterResponse createCharacter(UUID workId, CreateWorkCharacterRequest request) {
-        validateRequest(request);
+        WorkReadAccessValidator.requireNonNull(request, "Request");
         Work work = requireWork(workId);
 
         WorkCharacter character = WorkCharacter.builder()
@@ -57,7 +58,7 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
     @Override
     @Transactional
     public WorkCharacterResponse updateCharacter(UUID characterId, UpdateWorkCharacterRequest request) {
-        validateRequest(request);
+        WorkReadAccessValidator.requireNonNull(request, "Request");
         WorkCharacter character = requireCharacter(characterId);
 
         if (request.getName() != null) {
@@ -80,7 +81,7 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
     }
 
     private Work requireWork(UUID workId) {
-        validateId(workId, "workId");
+        WorkReadAccessValidator.requireNonNull(workId, "workId");
 
         return workRepository.findById(workId)
                 .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
@@ -93,7 +94,7 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
     }
 
     private WorkCharacter requireCharacter(UUID characterId) {
-        validateId(characterId, "characterId");
+        WorkReadAccessValidator.requireNonNull(characterId, "characterId");
 
         return workCharacterRepository.findById(characterId)
                 .orElseThrow(() -> new ApiException(
@@ -104,17 +105,5 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
 
     private int getNextDisplayOrder(UUID workId) {
         return workCharacterRepository.findMaxDisplayOrderByWorkId(workId) + 1;
-    }
-
-    private void validateId(UUID id, String fieldName) {
-        if (id == null) {
-            throw new ApiException(ErrorCode.VALIDATION_ERROR, fieldName + " không được để trống");
-        }
-    }
-
-    private void validateRequest(Object request) {
-        if (request == null) {
-            throw new ApiException(ErrorCode.VALIDATION_ERROR, "Request không được để trống");
-        }
     }
 }

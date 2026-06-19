@@ -28,6 +28,7 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
     private final ArtisticFeatureMapper artisticFeatureMapper;
 
     @Override
+    @Transactional(readOnly = true)
     public List<ArtisticFeatureResponse> getArtisticFeatures(UUID workId) {
         requireReadableWork(workId);
 
@@ -40,7 +41,7 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
     @Override
     @Transactional
     public ArtisticFeatureResponse createArtisticFeature(UUID workId, CreateArtisticFeatureRequest request) {
-        validateRequest(request);
+        WorkReadAccessValidator.requireNonNull(request, "Request");
         Work work = requireWork(workId);
 
         ArtisticFeature feature = ArtisticFeature.builder()
@@ -56,7 +57,7 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
     @Override
     @Transactional
     public ArtisticFeatureResponse updateArtisticFeature(UUID featureId, UpdateArtisticFeatureRequest request) {
-        validateRequest(request);
+        WorkReadAccessValidator.requireNonNull(request, "Request");
         ArtisticFeature feature = requireFeature(featureId);
 
         if (request.getTitle() != null) {
@@ -76,7 +77,7 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
     }
 
     private Work requireWork(UUID workId) {
-        validateId(workId, "workId");
+        WorkReadAccessValidator.requireNonNull(workId, "workId");
 
         return workRepository.findById(workId)
                 .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
@@ -89,7 +90,7 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
     }
 
     private ArtisticFeature requireFeature(UUID featureId) {
-        validateId(featureId, "featureId");
+        WorkReadAccessValidator.requireNonNull(featureId, "featureId");
 
         return artisticFeatureRepository.findById(featureId)
                 .orElseThrow(() -> new ApiException(
@@ -100,17 +101,5 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
 
     private int getNextDisplayOrder(UUID workId) {
         return artisticFeatureRepository.findMaxDisplayOrderByWorkId(workId) + 1;
-    }
-
-    private void validateId(UUID id, String fieldName) {
-        if (id == null) {
-            throw new ApiException(ErrorCode.VALIDATION_ERROR, fieldName + " không được để trống");
-        }
-    }
-
-    private void validateRequest(Object request) {
-        if (request == null) {
-            throw new ApiException(ErrorCode.VALIDATION_ERROR, "Request không được để trống");
-        }
     }
 }
