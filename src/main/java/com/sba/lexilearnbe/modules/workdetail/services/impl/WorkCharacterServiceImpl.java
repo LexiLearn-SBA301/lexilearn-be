@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -41,7 +42,7 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
     @Override
     @Transactional
     public WorkCharacterResponse createCharacter(UUID workId, CreateWorkCharacterRequest request) {
-        WorkReadAccessValidator.requireNonNull(request, "Request");
+        Objects.requireNonNull(request, "Request không được để trống");
         Work work = requireWork(workId);
 
         WorkCharacter character = WorkCharacter.builder()
@@ -58,7 +59,7 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
     @Override
     @Transactional
     public WorkCharacterResponse updateCharacter(UUID characterId, UpdateWorkCharacterRequest request) {
-        WorkReadAccessValidator.requireNonNull(request, "Request");
+        Objects.requireNonNull(request, "Request không được để trống");
         WorkCharacter character = requireCharacter(characterId);
 
         if (request.getName() != null) {
@@ -81,7 +82,7 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
     }
 
     private Work requireWork(UUID workId) {
-        WorkReadAccessValidator.requireNonNull(workId, "workId");
+        Objects.requireNonNull(workId, "workId không được để trống");
 
         return workRepository.findById(workId)
                 .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
@@ -94,7 +95,7 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
     }
 
     private WorkCharacter requireCharacter(UUID characterId) {
-        WorkReadAccessValidator.requireNonNull(characterId, "characterId");
+        Objects.requireNonNull(characterId, "characterId không được để trống");
 
         return workCharacterRepository.findById(characterId)
                 .orElseThrow(() -> new ApiException(

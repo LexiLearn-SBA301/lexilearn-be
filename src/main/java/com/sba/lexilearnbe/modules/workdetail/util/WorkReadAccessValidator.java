@@ -14,10 +14,4 @@ public final class WorkReadAccessValidator {
             throw new ApiException(ErrorCode.WORK_NOT_FOUND);
         }
     }
-
-    public static void requireNonNull(Object value, String fieldName) {
-        if (value == null) {
-            throw new ApiException(ErrorCode.VALIDATION_ERROR, fieldName + " không được để trống");
-        }
-    }
 }

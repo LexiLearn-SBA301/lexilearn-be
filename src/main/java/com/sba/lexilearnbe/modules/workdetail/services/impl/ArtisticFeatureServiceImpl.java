@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -41,7 +42,7 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
     @Override
     @Transactional
     public ArtisticFeatureResponse createArtisticFeature(UUID workId, CreateArtisticFeatureRequest request) {
-        WorkReadAccessValidator.requireNonNull(request, "Request");
+        Objects.requireNonNull(request, "Request không được để trống");
         Work work = requireWork(workId);
 
         ArtisticFeature feature = ArtisticFeature.builder()
@@ -57,7 +58,7 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
     @Override
     @Transactional
     public ArtisticFeatureResponse updateArtisticFeature(UUID featureId, UpdateArtisticFeatureRequest request) {
-        WorkReadAccessValidator.requireNonNull(request, "Request");
+        Objects.requireNonNull(request, "Request không được để trống");
         ArtisticFeature feature = requireFeature(featureId);
 
         if (request.getTitle() != null) {
@@ -77,7 +78,7 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
     }
 
     private Work requireWork(UUID workId) {
-        WorkReadAccessValidator.requireNonNull(workId, "workId");
+        Objects.requireNonNull(workId, "workId không được để trống");
 
         return workRepository.findById(workId)
                 .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
@@ -90,7 +91,7 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
     }
 
     private ArtisticFeature requireFeature(UUID featureId) {
-        WorkReadAccessValidator.requireNonNull(featureId, "featureId");
+        Objects.requireNonNull(featureId, "featureId không được để trống");
 
         return artisticFeatureRepository.findById(featureId)
                 .orElseThrow(() -> new ApiException(

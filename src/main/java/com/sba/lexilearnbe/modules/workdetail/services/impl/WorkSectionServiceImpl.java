@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -52,7 +53,7 @@ public class WorkSectionServiceImpl implements WorkSectionService {
     @Override
     @Transactional
     public WorkSectionDetailResponse createSection(UUID workId, CreateWorkSectionRequest request) {
-        WorkReadAccessValidator.requireNonNull(request, "Request");
+        Objects.requireNonNull(request, "Request không được để trống");
         Work work = requireWork(workId);
         Integer sectionNumber = request.getNumber() != null
                 ? request.getNumber()
@@ -74,7 +75,7 @@ public class WorkSectionServiceImpl implements WorkSectionService {
     @Override
     @Transactional
     public WorkSectionDetailResponse updateSection(UUID sectionId, UpdateWorkSectionRequest request) {
-        WorkReadAccessValidator.requireNonNull(request, "Request");
+        Objects.requireNonNull(request, "Request không được để trống");
         WorkSection section = requireSection(sectionId);
 
         if (request.getNumber() != null) {
@@ -99,7 +100,7 @@ public class WorkSectionServiceImpl implements WorkSectionService {
     }
 
     private Work requireWork(UUID workId) {
-        WorkReadAccessValidator.requireNonNull(workId, "workId");
+        Objects.requireNonNull(workId, "workId không được để trống");
 
         return workRepository.findById(workId)
                 .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
@@ -112,7 +113,7 @@ public class WorkSectionServiceImpl implements WorkSectionService {
     }
 
     private WorkSection requireSection(UUID sectionId) {
-        WorkReadAccessValidator.requireNonNull(sectionId, "sectionId");
+        Objects.requireNonNull(sectionId, "sectionId không được để trống");
 
         return workSectionRepository.findById(sectionId)
                 .orElseThrow(() -> new ApiException(ErrorCode.SECTION_NOT_FOUND));
