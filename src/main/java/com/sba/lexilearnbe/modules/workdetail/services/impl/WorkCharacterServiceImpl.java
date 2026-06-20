@@ -42,7 +42,6 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
     @Override
     @Transactional
     public WorkCharacterResponse createCharacter(UUID workId, CreateWorkCharacterRequest request) {
-        Objects.requireNonNull(request, "Request không được để trống");
         Work work = requireWork(workId);
 
         WorkCharacter character = WorkCharacter.builder()
@@ -60,7 +59,6 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
     @Override
     @Transactional
     public WorkCharacterResponse updateCharacter(UUID characterId, UpdateWorkCharacterRequest request) {
-        Objects.requireNonNull(request, "Request không được để trống");
         WorkCharacter character = requireCharacter(characterId);
 
         if (request.getName() != null) {

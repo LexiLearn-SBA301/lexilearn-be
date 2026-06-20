@@ -42,7 +42,6 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
     @Override
     @Transactional
     public ArtisticFeatureResponse createArtisticFeature(UUID workId, CreateArtisticFeatureRequest request) {
-        Objects.requireNonNull(request, "Request không được để trống");
         Work work = requireWork(workId);
 
         ArtisticFeature feature = ArtisticFeature.builder()
@@ -59,7 +58,6 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
     @Override
     @Transactional
     public ArtisticFeatureResponse updateArtisticFeature(UUID featureId, UpdateArtisticFeatureRequest request) {
-        Objects.requireNonNull(request, "Request không được để trống");
         ArtisticFeature feature = requireFeature(featureId);
 
         if (request.getFeatureType() != null) {

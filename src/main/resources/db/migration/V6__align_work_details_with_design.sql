@@ -26,7 +26,7 @@ ALTER TABLE characters
     ADD CONSTRAINT chk_characters_role_type
         CHECK (
             role_type IS NULL OR
-            role_type IN ('CHINH', 'PHU', 'PHAN_DIEN', 'NGUOI_DAN_CHUYEN')
+            role_type IN ('MAIN', 'SUPPORTING', 'ANTAGONIST', 'NARRATOR')
         );
 
 ALTER TABLE characters

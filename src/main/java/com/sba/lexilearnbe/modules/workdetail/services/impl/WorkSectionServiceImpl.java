@@ -53,7 +53,6 @@ public class WorkSectionServiceImpl implements WorkSectionService {
     @Override
     @Transactional
     public WorkSectionDetailResponse createSection(UUID workId, CreateWorkSectionRequest request) {
-        Objects.requireNonNull(request, "Request không được để trống");
         Work work = requireWork(workId);
         Integer sectionNumber = request.getNumber() != null
                 ? request.getNumber()
@@ -75,7 +74,6 @@ public class WorkSectionServiceImpl implements WorkSectionService {
     @Override
     @Transactional
     public WorkSectionDetailResponse updateSection(UUID sectionId, UpdateWorkSectionRequest request) {
-        Objects.requireNonNull(request, "Request không được để trống");
         WorkSection section = requireSection(sectionId);
 
         if (request.getNumber() != null) {

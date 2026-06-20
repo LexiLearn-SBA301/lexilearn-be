@@ -8,6 +8,7 @@ import com.sba.lexilearnbe.shared.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,7 +36,7 @@ public class AdminArtisticFeatureController {
     @Operation(summary = "Tạo đặc điểm nghệ thuật")
     public ResponseEntity<ApiResponse<ArtisticFeatureResponse>> createArtisticFeature(
             @PathVariable UUID workId,
-            @Valid @RequestBody CreateArtisticFeatureRequest request
+            @NotNull @Valid @RequestBody CreateArtisticFeatureRequest request
     ) {
         ArtisticFeatureResponse result = artisticFeatureService.createArtisticFeature(workId, request);
 
@@ -52,7 +53,7 @@ public class AdminArtisticFeatureController {
     @Operation(summary = "Cập nhật đặc điểm nghệ thuật")
     public ResponseEntity<ApiResponse<ArtisticFeatureResponse>> updateArtisticFeature(
             @PathVariable UUID featureId,
-            @Valid @RequestBody UpdateArtisticFeatureRequest request
+            @NotNull @Valid @RequestBody UpdateArtisticFeatureRequest request
     ) {
         ArtisticFeatureResponse result = artisticFeatureService.updateArtisticFeature(featureId, request);
 

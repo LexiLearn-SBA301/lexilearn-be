@@ -8,6 +8,7 @@ import com.sba.lexilearnbe.shared.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,7 +36,7 @@ public class AdminWorkSectionController {
     @Operation(summary = "Tạo phần văn bản mới")
     public ResponseEntity<ApiResponse<WorkSectionDetailResponse>> createSection(
             @PathVariable UUID workId,
-            @Valid @RequestBody CreateWorkSectionRequest request
+            @NotNull @Valid @RequestBody CreateWorkSectionRequest request
     ) {
         WorkSectionDetailResponse result = workSectionService.createSection(workId, request);
 
@@ -52,7 +53,7 @@ public class AdminWorkSectionController {
     @Operation(summary = "Cập nhật phần văn bản")
     public ResponseEntity<ApiResponse<WorkSectionDetailResponse>> updateSection(
             @PathVariable UUID sectionId,
-            @Valid @RequestBody UpdateWorkSectionRequest request
+            @NotNull @Valid @RequestBody UpdateWorkSectionRequest request
     ) {
         WorkSectionDetailResponse result = workSectionService.updateSection(sectionId, request);
 
