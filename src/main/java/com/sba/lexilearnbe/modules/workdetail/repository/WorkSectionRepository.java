@@ -1,7 +1,6 @@
 package com.sba.lexilearnbe.modules.workdetail.repository;
 
 import com.sba.lexilearnbe.modules.workdetail.entity.WorkSection;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,10 +14,10 @@ import java.util.UUID;
 public interface WorkSectionRepository extends JpaRepository<WorkSection, UUID> {
 
     @Override
-    @EntityGraph(attributePaths = "work")
+    @Query("SELECT s FROM WorkSection s JOIN FETCH s.work WHERE s.id = :id")
     Optional<WorkSection> findById(UUID id);
 
-    @EntityGraph(attributePaths = "work")
+    @Query("SELECT s FROM WorkSection s JOIN FETCH s.work WHERE s.work.id = :workId ORDER BY s.number ASC")
     List<WorkSection> findAllByWork_IdOrderByNumberAsc(UUID workId);
 
     @Query("SELECT COALESCE(MAX(s.number), 0) FROM WorkSection s WHERE s.work.id = :workId")

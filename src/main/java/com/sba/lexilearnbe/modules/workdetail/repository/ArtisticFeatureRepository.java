@@ -1,7 +1,6 @@
 package com.sba.lexilearnbe.modules.workdetail.repository;
 
 import com.sba.lexilearnbe.modules.workdetail.entity.ArtisticFeature;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,10 +14,10 @@ import java.util.UUID;
 public interface ArtisticFeatureRepository extends JpaRepository<ArtisticFeature, UUID> {
 
     @Override
-    @EntityGraph(attributePaths = "work")
+    @Query("SELECT f FROM ArtisticFeature f JOIN FETCH f.work WHERE f.id = :id")
     Optional<ArtisticFeature> findById(UUID id);
 
-    @EntityGraph(attributePaths = "work")
+    @Query("SELECT f FROM ArtisticFeature f JOIN FETCH f.work WHERE f.work.id = :workId ORDER BY f.displayOrder ASC")
     List<ArtisticFeature> findAllByWork_IdOrderByDisplayOrderAsc(UUID workId);
 
     @Query("SELECT COALESCE(MAX(f.displayOrder), -1) FROM ArtisticFeature f WHERE f.work.id = :workId")
