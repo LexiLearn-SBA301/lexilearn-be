@@ -14,12 +14,12 @@ import java.util.UUID;
 @Repository
 public interface WorkSectionRepository extends JpaRepository<WorkSection, UUID> {
 
-    @Override
-    @EntityGraph(attributePaths = "work")
-    Optional<WorkSection> findById(UUID id);
-
     @EntityGraph(attributePaths = "work")
     List<WorkSection> findAllByWork_IdOrderByNumberAsc(UUID workId);
+
+    @EntityGraph(attributePaths = "work")
+    @Query("SELECT s FROM WorkSection s WHERE s.id = :id")
+    Optional<WorkSection> findByIdWithWork(@Param("id") UUID id);
 
     @Query("SELECT COALESCE(MAX(s.number), 0) FROM WorkSection s WHERE s.work.id = :workId")
     Integer findMaxNumberByWorkId(@Param("workId") UUID workId);

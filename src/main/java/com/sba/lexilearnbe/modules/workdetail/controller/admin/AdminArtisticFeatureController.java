@@ -1,7 +1,6 @@
 package com.sba.lexilearnbe.modules.workdetail.controller.admin;
 
 import com.sba.lexilearnbe.modules.workdetail.dto.request.CreateArtisticFeatureRequest;
-import com.sba.lexilearnbe.modules.workdetail.dto.request.ReorderArtisticFeaturesRequest;
 import com.sba.lexilearnbe.modules.workdetail.dto.request.UpdateArtisticFeatureRequest;
 import com.sba.lexilearnbe.modules.workdetail.dto.response.ArtisticFeatureResponse;
 import com.sba.lexilearnbe.modules.workdetail.services.ArtisticFeatureService;
@@ -21,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -77,21 +75,4 @@ public class AdminArtisticFeatureController {
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/works/{workId}/artistic-features/sequence")
-    @Operation(summary = "Sắp xếp lại thứ tự đặc điểm nghệ thuật")
-    public ResponseEntity<ApiResponse<List<ArtisticFeatureResponse>>> reorderArtisticFeatures(
-            @PathVariable UUID workId,
-            @Valid @RequestBody ReorderArtisticFeaturesRequest request
-    ) {
-        List<ArtisticFeatureResponse> result =
-                artisticFeatureService.reorderArtisticFeatures(workId, request);
-
-        ApiResponse<List<ArtisticFeatureResponse>> response =
-                ApiResponse.<List<ArtisticFeatureResponse>>builder()
-                        .message("Sắp xếp thứ tự đặc điểm nghệ thuật thành công")
-                        .result(result)
-                        .build();
-
-        return ResponseEntity.ok(response);
-    }
 }

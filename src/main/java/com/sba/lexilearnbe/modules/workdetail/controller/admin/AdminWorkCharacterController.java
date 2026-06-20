@@ -1,7 +1,6 @@
 package com.sba.lexilearnbe.modules.workdetail.controller.admin;
 
 import com.sba.lexilearnbe.modules.workdetail.dto.request.CreateWorkCharacterRequest;
-import com.sba.lexilearnbe.modules.workdetail.dto.request.ReorderWorkCharactersRequest;
 import com.sba.lexilearnbe.modules.workdetail.dto.request.UpdateWorkCharacterRequest;
 import com.sba.lexilearnbe.modules.workdetail.dto.response.WorkCharacterResponse;
 import com.sba.lexilearnbe.modules.workdetail.services.WorkCharacterService;
@@ -21,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -77,20 +75,4 @@ public class AdminWorkCharacterController {
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/works/{workId}/characters/sequence")
-    @Operation(summary = "Sắp xếp lại thứ tự nhân vật")
-    public ResponseEntity<ApiResponse<List<WorkCharacterResponse>>> reorderCharacters(
-            @PathVariable UUID workId,
-            @Valid @RequestBody ReorderWorkCharactersRequest request
-    ) {
-        List<WorkCharacterResponse> result = workCharacterService.reorderCharacters(workId, request);
-
-        ApiResponse<List<WorkCharacterResponse>> response =
-                ApiResponse.<List<WorkCharacterResponse>>builder()
-                        .message("Sắp xếp thứ tự nhân vật thành công")
-                        .result(result)
-                        .build();
-
-        return ResponseEntity.ok(response);
-    }
 }
