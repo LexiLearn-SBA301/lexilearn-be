@@ -8,15 +8,13 @@ import com.sba.lexilearnbe.modules.workdetail.dto.response.WorkSectionDetailResp
 import com.sba.lexilearnbe.modules.workdetail.dto.response.WorkSectionSummaryResponse;
 import com.sba.lexilearnbe.modules.workdetail.entity.WorkSection;
 import com.sba.lexilearnbe.modules.workdetail.mapper.WorkSectionMapper;
+import com.sba.lexilearnbe.modules.workdetail.repository.WorkDetailWorkRepository;
 import com.sba.lexilearnbe.modules.workdetail.repository.WorkSectionRepository;
 import com.sba.lexilearnbe.modules.workdetail.services.WorkSectionService;
 import com.sba.lexilearnbe.modules.workdetail.util.WordCountCalculator;
 import com.sba.lexilearnbe.modules.workdetail.util.WorkReadAccessValidator;
 import com.sba.lexilearnbe.shared.common.exception.ApiException;
 import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.LockModeType;
-import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,11 +28,9 @@ import java.util.UUID;
 public class WorkSectionServiceImpl implements WorkSectionService {
 
     private final WorkRepository workRepository;
+    private final WorkDetailWorkRepository workDetailWorkRepository;
     private final WorkSectionRepository workSectionRepository;
     private final WorkSectionMapper workSectionMapper;
-
-    @PersistenceContext
-    private EntityManager entityManager;
 
     @Override
     @Transactional(readOnly = true)
@@ -114,12 +110,8 @@ public class WorkSectionServiceImpl implements WorkSectionService {
     private Work requireWorkForUpdate(UUID workId) {
         Objects.requireNonNull(workId, "workId không được để trống");
 
-        Work work = entityManager.find(Work.class, workId, LockModeType.PESSIMISTIC_WRITE);
-        if (work == null) {
-            throw new ApiException(ErrorCode.WORK_NOT_FOUND);
-        }
-
-        return work;
+        return workDetailWorkRepository.findByIdForUpdate(workId)
+                .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
     }
 
     private Work requireReadableWork(UUID workId) {

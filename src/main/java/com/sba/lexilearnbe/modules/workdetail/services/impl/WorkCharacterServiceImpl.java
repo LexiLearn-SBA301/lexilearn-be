@@ -7,14 +7,12 @@ import com.sba.lexilearnbe.modules.workdetail.dto.request.UpdateWorkCharacterReq
 import com.sba.lexilearnbe.modules.workdetail.dto.response.WorkCharacterResponse;
 import com.sba.lexilearnbe.modules.workdetail.entity.WorkCharacter;
 import com.sba.lexilearnbe.modules.workdetail.mapper.WorkCharacterMapper;
+import com.sba.lexilearnbe.modules.workdetail.repository.WorkDetailWorkRepository;
 import com.sba.lexilearnbe.modules.workdetail.repository.WorkCharacterRepository;
 import com.sba.lexilearnbe.modules.workdetail.services.WorkCharacterService;
 import com.sba.lexilearnbe.modules.workdetail.util.WorkReadAccessValidator;
 import com.sba.lexilearnbe.shared.common.exception.ApiException;
 import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.LockModeType;
-import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,11 +26,9 @@ import java.util.UUID;
 public class WorkCharacterServiceImpl implements WorkCharacterService {
 
     private final WorkRepository workRepository;
+    private final WorkDetailWorkRepository workDetailWorkRepository;
     private final WorkCharacterRepository workCharacterRepository;
     private final WorkCharacterMapper workCharacterMapper;
-
-    @PersistenceContext
-    private EntityManager entityManager;
 
     @Override
     @Transactional(readOnly = true)
@@ -99,12 +95,8 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
     private Work requireWorkForUpdate(UUID workId) {
         Objects.requireNonNull(workId, "workId không được để trống");
 
-        Work work = entityManager.find(Work.class, workId, LockModeType.PESSIMISTIC_WRITE);
-        if (work == null) {
-            throw new ApiException(ErrorCode.WORK_NOT_FOUND);
-        }
-
-        return work;
+        return workDetailWorkRepository.findByIdForUpdate(workId)
+                .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
     }
 
     private Work requireReadableWork(UUID workId) {

@@ -1,6 +1,7 @@
 package com.sba.lexilearnbe.modules.workdetail.repository;
 
 import com.sba.lexilearnbe.modules.workdetail.entity.WorkCharacter;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,6 +13,7 @@ import java.util.UUID;
 @Repository
 public interface WorkCharacterRepository extends JpaRepository<WorkCharacter, UUID> {
 
+    @EntityGraph(attributePaths = "work")
     List<WorkCharacter> findAllByWork_IdOrderByDisplayOrderAsc(UUID workId);
 
     @Query("SELECT COALESCE(MAX(c.displayOrder), -1) FROM WorkCharacter c WHERE c.work.id = :workId")
