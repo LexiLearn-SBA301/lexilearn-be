@@ -59,7 +59,7 @@ public class WorkController {
     }
     // ── ADMIN APIs (Dành cho Quản trị viên) ───────────────────────────────────
     @PostMapping("/admin/works")
-//    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Tạo mới tác phẩm", description = "Yêu cầu quyền ADMIN")
     public ResponseEntity<ApiResponse<WorkDetailResponse>> createWork(@Valid @RequestBody WorkRequest request) {
 
@@ -72,7 +72,7 @@ public class WorkController {
     }
 
     @PatchMapping("/admin/works/{id}")
-//    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Cập nhật tác phẩm", description = "Yêu cầu quyền ADMIN")
     public ResponseEntity<ApiResponse<WorkDetailResponse>> updateWork(
             @PathVariable UUID id,
@@ -87,7 +87,7 @@ public class WorkController {
     }
 
     @DeleteMapping("/admin/works/{id}")
-//    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Xóa tác phẩm", description = "Yêu cầu quyền ADMIN")
     public ResponseEntity<ApiResponse<Void>> deleteWork(@PathVariable UUID id) {
 

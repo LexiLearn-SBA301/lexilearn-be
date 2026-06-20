@@ -44,7 +44,7 @@ public interface WorkRepository extends JpaRepository<Work, UUID> {
     List<Work> fetchTagsForWorks(@Param("works") List<Work> works);
 
     boolean existsByAuthorId(UUID id);
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Work w SET w.viewCount = w.viewCount + 1 WHERE w.slug = :slug")
     void incrementViewCountBySlug(@Param("slug") String slug);
 }
