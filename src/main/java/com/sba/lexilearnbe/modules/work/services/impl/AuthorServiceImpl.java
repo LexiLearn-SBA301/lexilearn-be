@@ -18,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -29,15 +30,18 @@ public class AuthorServiceImpl implements AuthorService {
 
     @Override
     public Page<AuthorSummaryResponse> getAuthors(String searchKeyword, Pageable pageable) {
-        String safeSearch = (searchKeyword == null) ? "" : searchKeyword;
+        String safeSearch = StringUtils.hasText(searchKeyword) ? searchKeyword.trim() : "";
         return authorRepository.findAuthorsWithFilter(safeSearch, pageable)
                 .map(authorMapper::toSummaryResponse);
     }
 
     @Override
     public AuthorDetailResponse getAuthorDetail(String slug) {
+        if (!StringUtils.hasText(slug)) {
+            throw new ApiException(ErrorCode.AUTHOR_NOT_FOUND);
+        }
         return authorMapper.toDetailResponse(
-                authorRepository.findBySlug(slug)
+                authorRepository.findBySlug(slug.trim())
                         .orElseThrow(() -> new ApiException(ErrorCode.AUTHOR_NOT_FOUND))
         );
     }

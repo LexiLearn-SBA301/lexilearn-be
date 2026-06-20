@@ -16,6 +16,7 @@ public interface WorkMapper {
 
     @Mapping(target = "authorName", source = "work.author.name", defaultValue = "Khuyết danh")
     @Mapping(target = "tags", expression = "java(mapTags(tags))")
+    @Mapping(target = "publishYear", source = "work.publishYear")
     WorkSummaryResponse toSummaryResponse(Work work, Set<Tag> tags);
 
     @Mapping(target = "authorId", source = "author.id")
