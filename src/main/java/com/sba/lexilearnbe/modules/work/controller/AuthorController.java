@@ -56,7 +56,7 @@ public class AuthorController {
     }
     // ── ADMIN APIs (Dành cho Quản trị viên) ───────────────────────────────────
     @PostMapping("/admin/authors")
-    @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Tạo mới tác giả", description = "Yêu cầu quyền ADMIN")
     public ResponseEntity<ApiResponse<AuthorDetailResponse>> createAuthor(@Valid @RequestBody AuthorRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.<AuthorDetailResponse>builder()
@@ -66,7 +66,7 @@ public class AuthorController {
     }
 
     @PatchMapping("/admin/authors/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Cập nhật thông tin tác giả", description = "Yêu cầu quyền ADMIN")
     public ResponseEntity<ApiResponse<AuthorDetailResponse>> updateAuthor(
             @PathVariable UUID id,
@@ -79,7 +79,7 @@ public class AuthorController {
     }
 
     @DeleteMapping("/admin/authors/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Xóa tác giả", description = "Yêu cầu quyền ADMIN")
     public ResponseEntity<ApiResponse<Void>> deleteAuthor(@PathVariable UUID id) {
         authorService.deleteAuthor(id);
