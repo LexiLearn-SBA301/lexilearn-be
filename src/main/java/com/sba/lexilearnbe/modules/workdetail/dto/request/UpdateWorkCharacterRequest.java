@@ -1,5 +1,6 @@
 package com.sba.lexilearnbe.modules.workdetail.dto.request;
 
+import com.sba.lexilearnbe.modules.workdetail.enums.WorkCharacterRoleType;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -11,12 +12,14 @@ import lombok.Setter;
 @NoArgsConstructor
 public class UpdateWorkCharacterRequest {
 
-    @Size(max = 200, message = "Tên nhân vật tối đa 200 ký tự")
+    @Size(max = 150, message = "Tên nhân vật tối đa 150 ký tự")
     @Pattern(
             regexp = "(?s).*\\S.*",
             message = "Tên nhân vật không được để trống"
     )
     private String name;
+
+    private WorkCharacterRoleType roleType;
 
     private String description;
 

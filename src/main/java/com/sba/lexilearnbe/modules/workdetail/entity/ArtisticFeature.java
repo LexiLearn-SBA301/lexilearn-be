@@ -1,9 +1,12 @@
 package com.sba.lexilearnbe.modules.workdetail.entity;
 
 import com.sba.lexilearnbe.modules.work.entity.Work;
+import com.sba.lexilearnbe.modules.workdetail.enums.ArtisticFeatureType;
 import com.sba.lexilearnbe.shared.infrastructure.persistence.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -27,11 +30,15 @@ public class ArtisticFeature extends BaseEntity {
     @JoinColumn(name = "work_id", nullable = false)
     private Work work;
 
-    @Column(nullable = false, length = 255)
+    @Column(name = "feature_type", nullable = false, length = 50)
+    @Enumerated(EnumType.STRING)
+    private ArtisticFeatureType featureType;
+
+    @Column(nullable = false, length = 200)
     private String title;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
-    private String content;
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
     @Column(name = "display_order", nullable = false)
     private Integer displayOrder;

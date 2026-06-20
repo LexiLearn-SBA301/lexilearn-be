@@ -47,8 +47,9 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
 
         ArtisticFeature feature = ArtisticFeature.builder()
                 .work(work)
+                .featureType(request.getFeatureType())
                 .title(request.getTitle().trim())
-                .content(request.getContent())
+                .description(request.getDescription())
                 .displayOrder(getNextDisplayOrder(workId))
                 .build();
 
@@ -61,11 +62,14 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
         Objects.requireNonNull(request, "Request không được để trống");
         ArtisticFeature feature = requireFeature(featureId);
 
+        if (request.getFeatureType() != null) {
+            feature.setFeatureType(request.getFeatureType());
+        }
         if (request.getTitle() != null) {
             feature.setTitle(request.getTitle().trim());
         }
-        if (request.getContent() != null) {
-            feature.setContent(request.getContent());
+        if (request.getDescription() != null) {
+            feature.setDescription(request.getDescription());
         }
 
         return artisticFeatureMapper.toResponse(artisticFeatureRepository.save(feature));

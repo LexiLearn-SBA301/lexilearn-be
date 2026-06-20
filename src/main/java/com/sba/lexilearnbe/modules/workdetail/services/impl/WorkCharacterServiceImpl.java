@@ -48,6 +48,7 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
         WorkCharacter character = WorkCharacter.builder()
                 .work(work)
                 .name(request.getName().trim())
+                .roleType(request.getRoleType())
                 .description(request.getDescription())
                 .analysis(request.getAnalysis())
                 .displayOrder(getNextDisplayOrder(workId))
@@ -64,6 +65,9 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
 
         if (request.getName() != null) {
             character.setName(request.getName().trim());
+        }
+        if (request.getRoleType() != null) {
+            character.setRoleType(request.getRoleType());
         }
         if (request.getDescription() != null) {
             character.setDescription(request.getDescription());
