@@ -8,7 +8,6 @@ import com.sba.lexilearnbe.modules.workdetail.dto.response.WorkSectionDetailResp
 import com.sba.lexilearnbe.modules.workdetail.dto.response.WorkSectionSummaryResponse;
 import com.sba.lexilearnbe.modules.workdetail.entity.WorkSection;
 import com.sba.lexilearnbe.modules.workdetail.mapper.WorkSectionMapper;
-import com.sba.lexilearnbe.modules.workdetail.repository.WorkDetailWorkRepository;
 import com.sba.lexilearnbe.modules.workdetail.repository.WorkSectionRepository;
 import com.sba.lexilearnbe.modules.workdetail.services.WorkSectionService;
 import com.sba.lexilearnbe.modules.workdetail.util.WordCountCalculator;
@@ -16,6 +15,7 @@ import com.sba.lexilearnbe.modules.workdetail.util.WorkReadAccessValidator;
 import com.sba.lexilearnbe.shared.common.exception.ApiException;
 import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +28,6 @@ import java.util.UUID;
 public class WorkSectionServiceImpl implements WorkSectionService {
 
     private final WorkRepository workRepository;
-    private final WorkDetailWorkRepository workDetailWorkRepository;
     private final WorkSectionRepository workSectionRepository;
     private final WorkSectionMapper workSectionMapper;
 
@@ -55,7 +54,7 @@ public class WorkSectionServiceImpl implements WorkSectionService {
     @Override
     @Transactional
     public WorkSectionDetailResponse createSection(UUID workId, CreateWorkSectionRequest request) {
-        Work work = requireWorkForUpdate(workId);
+        Work work = requireWork(workId);
         Integer sectionNumber = request.getNumber() != null
                 ? request.getNumber()
                 : getNextNumber(workId);
@@ -70,7 +69,14 @@ public class WorkSectionServiceImpl implements WorkSectionService {
                 .wordCount(WordCountCalculator.count(request.getContent()))
                 .build();
 
-        return workSectionMapper.toDetail(workSectionRepository.save(section));
+        try {
+            return workSectionMapper.toDetail(workSectionRepository.saveAndFlush(section));
+        } catch (DataIntegrityViolationException exception) {
+            throw new ApiException(
+                    ErrorCode.VALIDATION_ERROR,
+                    "Số thứ tự phần văn bản đã tồn tại trong tác phẩm"
+            );
+        }
     }
 
     @Override
@@ -79,7 +85,6 @@ public class WorkSectionServiceImpl implements WorkSectionService {
         WorkSection section = requireSection(sectionId);
 
         if (request.getNumber() != null) {
-            requireWorkForUpdate(section.getWork().getId());
             validateUniqueNumber(section.getWork().getId(), request.getNumber(), sectionId);
             section.setNumber(request.getNumber());
         }
@@ -91,7 +96,14 @@ public class WorkSectionServiceImpl implements WorkSectionService {
             section.setWordCount(WordCountCalculator.count(request.getContent()));
         }
 
-        return workSectionMapper.toDetail(workSectionRepository.save(section));
+        try {
+            return workSectionMapper.toDetail(workSectionRepository.saveAndFlush(section));
+        } catch (DataIntegrityViolationException exception) {
+            throw new ApiException(
+                    ErrorCode.VALIDATION_ERROR,
+                    "Số thứ tự phần văn bản đã tồn tại trong tác phẩm"
+            );
+        }
     }
 
     @Override
@@ -107,13 +119,6 @@ public class WorkSectionServiceImpl implements WorkSectionService {
                 .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
     }
 
-    private Work requireWorkForUpdate(UUID workId) {
-        Objects.requireNonNull(workId, "workId không được để trống");
-
-        return workDetailWorkRepository.findByIdForUpdate(workId)
-                .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
-    }
-
     private Work requireReadableWork(UUID workId) {
         Work work = requireWork(workId);
         WorkReadAccessValidator.validate(work);
@@ -123,7 +128,7 @@ public class WorkSectionServiceImpl implements WorkSectionService {
     private WorkSection requireSection(UUID sectionId) {
         Objects.requireNonNull(sectionId, "sectionId không được để trống");
 
-        return workSectionRepository.findById(sectionId)
+        return workSectionRepository.findByIdWithWork(sectionId)
                 .orElseThrow(() -> new ApiException(ErrorCode.SECTION_NOT_FOUND));
     }
 

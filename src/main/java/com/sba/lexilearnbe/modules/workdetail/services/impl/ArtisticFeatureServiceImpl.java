@@ -8,12 +8,12 @@ import com.sba.lexilearnbe.modules.workdetail.dto.response.ArtisticFeatureRespon
 import com.sba.lexilearnbe.modules.workdetail.entity.ArtisticFeature;
 import com.sba.lexilearnbe.modules.workdetail.mapper.ArtisticFeatureMapper;
 import com.sba.lexilearnbe.modules.workdetail.repository.ArtisticFeatureRepository;
-import com.sba.lexilearnbe.modules.workdetail.repository.WorkDetailWorkRepository;
 import com.sba.lexilearnbe.modules.workdetail.services.ArtisticFeatureService;
 import com.sba.lexilearnbe.modules.workdetail.util.WorkReadAccessValidator;
 import com.sba.lexilearnbe.shared.common.exception.ApiException;
 import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +26,6 @@ import java.util.UUID;
 public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
 
     private final WorkRepository workRepository;
-    private final WorkDetailWorkRepository workDetailWorkRepository;
     private final ArtisticFeatureRepository artisticFeatureRepository;
     private final ArtisticFeatureMapper artisticFeatureMapper;
 
@@ -44,7 +43,7 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
     @Override
     @Transactional
     public ArtisticFeatureResponse createArtisticFeature(UUID workId, CreateArtisticFeatureRequest request) {
-        Work work = requireWorkForUpdate(workId);
+        Work work = requireWork(workId);
 
         ArtisticFeature feature = ArtisticFeature.builder()
                 .work(work)
@@ -54,7 +53,14 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
                 .displayOrder(getNextDisplayOrder(workId))
                 .build();
 
-        return artisticFeatureMapper.toResponse(artisticFeatureRepository.save(feature));
+        try {
+            return artisticFeatureMapper.toResponse(artisticFeatureRepository.saveAndFlush(feature));
+        } catch (DataIntegrityViolationException exception) {
+            throw new ApiException(
+                    ErrorCode.VALIDATION_ERROR,
+                    "Thứ tự đặc điểm nghệ thuật đã tồn tại trong tác phẩm"
+            );
+        }
     }
 
     @Override
@@ -88,13 +94,6 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
                 .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
     }
 
-    private Work requireWorkForUpdate(UUID workId) {
-        Objects.requireNonNull(workId, "workId không được để trống");
-
-        return workDetailWorkRepository.findByIdForUpdate(workId)
-                .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
-    }
-
     private Work requireReadableWork(UUID workId) {
         Work work = requireWork(workId);
         WorkReadAccessValidator.validate(work);
@@ -104,7 +103,7 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
     private ArtisticFeature requireFeature(UUID featureId) {
         Objects.requireNonNull(featureId, "featureId không được để trống");
 
-        return artisticFeatureRepository.findById(featureId)
+        return artisticFeatureRepository.findByIdWithWork(featureId)
                 .orElseThrow(() -> new ApiException(
                         ErrorCode.RESOURCE_NOT_FOUND,
                         "Đặc điểm nghệ thuật không tồn tại"

@@ -7,13 +7,13 @@ import com.sba.lexilearnbe.modules.workdetail.dto.request.UpdateWorkCharacterReq
 import com.sba.lexilearnbe.modules.workdetail.dto.response.WorkCharacterResponse;
 import com.sba.lexilearnbe.modules.workdetail.entity.WorkCharacter;
 import com.sba.lexilearnbe.modules.workdetail.mapper.WorkCharacterMapper;
-import com.sba.lexilearnbe.modules.workdetail.repository.WorkDetailWorkRepository;
 import com.sba.lexilearnbe.modules.workdetail.repository.WorkCharacterRepository;
 import com.sba.lexilearnbe.modules.workdetail.services.WorkCharacterService;
 import com.sba.lexilearnbe.modules.workdetail.util.WorkReadAccessValidator;
 import com.sba.lexilearnbe.shared.common.exception.ApiException;
 import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +26,6 @@ import java.util.UUID;
 public class WorkCharacterServiceImpl implements WorkCharacterService {
 
     private final WorkRepository workRepository;
-    private final WorkDetailWorkRepository workDetailWorkRepository;
     private final WorkCharacterRepository workCharacterRepository;
     private final WorkCharacterMapper workCharacterMapper;
 
@@ -44,7 +43,7 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
     @Override
     @Transactional
     public WorkCharacterResponse createCharacter(UUID workId, CreateWorkCharacterRequest request) {
-        Work work = requireWorkForUpdate(workId);
+        Work work = requireWork(workId);
 
         WorkCharacter character = WorkCharacter.builder()
                 .work(work)
@@ -55,7 +54,14 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
                 .displayOrder(getNextDisplayOrder(workId))
                 .build();
 
-        return workCharacterMapper.toResponse(workCharacterRepository.save(character));
+        try {
+            return workCharacterMapper.toResponse(workCharacterRepository.saveAndFlush(character));
+        } catch (DataIntegrityViolationException exception) {
+            throw new ApiException(
+                    ErrorCode.VALIDATION_ERROR,
+                    "Thứ tự nhân vật đã tồn tại trong tác phẩm"
+            );
+        }
     }
 
     @Override
@@ -92,13 +98,6 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
                 .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
     }
 
-    private Work requireWorkForUpdate(UUID workId) {
-        Objects.requireNonNull(workId, "workId không được để trống");
-
-        return workDetailWorkRepository.findByIdForUpdate(workId)
-                .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
-    }
-
     private Work requireReadableWork(UUID workId) {
         Work work = requireWork(workId);
         WorkReadAccessValidator.validate(work);
@@ -108,7 +107,7 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
     private WorkCharacter requireCharacter(UUID characterId) {
         Objects.requireNonNull(characterId, "characterId không được để trống");
 
-        return workCharacterRepository.findById(characterId)
+        return workCharacterRepository.findByIdWithWork(characterId)
                 .orElseThrow(() -> new ApiException(
                         ErrorCode.RESOURCE_NOT_FOUND,
                         "Nhân vật không tồn tại"
