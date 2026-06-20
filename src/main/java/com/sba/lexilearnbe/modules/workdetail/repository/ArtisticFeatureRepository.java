@@ -15,10 +15,10 @@ public interface ArtisticFeatureRepository extends JpaRepository<ArtisticFeature
 
     @Override
     @Query("SELECT f FROM ArtisticFeature f JOIN FETCH f.work WHERE f.id = :id")
-    Optional<ArtisticFeature> findById(UUID id);
+    Optional<ArtisticFeature> findById(@Param("id") UUID id);
 
     @Query("SELECT f FROM ArtisticFeature f JOIN FETCH f.work WHERE f.work.id = :workId ORDER BY f.displayOrder ASC")
-    List<ArtisticFeature> findAllByWork_IdOrderByDisplayOrderAsc(UUID workId);
+    List<ArtisticFeature> findAllByWork_IdOrderByDisplayOrderAsc(@Param("workId") UUID workId);
 
     @Query("SELECT COALESCE(MAX(f.displayOrder), -1) FROM ArtisticFeature f WHERE f.work.id = :workId")
     Integer findMaxDisplayOrderByWorkId(@Param("workId") UUID workId);

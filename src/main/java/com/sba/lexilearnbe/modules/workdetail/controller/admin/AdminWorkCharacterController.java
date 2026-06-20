@@ -8,7 +8,6 @@ import com.sba.lexilearnbe.shared.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,7 +35,7 @@ public class AdminWorkCharacterController {
     @Operation(summary = "Tạo nhân vật")
     public ResponseEntity<ApiResponse<WorkCharacterResponse>> createCharacter(
             @PathVariable UUID workId,
-            @NotNull @Valid @RequestBody CreateWorkCharacterRequest request
+            @Valid @RequestBody CreateWorkCharacterRequest request
     ) {
         WorkCharacterResponse result = workCharacterService.createCharacter(workId, request);
 
@@ -53,7 +52,7 @@ public class AdminWorkCharacterController {
     @Operation(summary = "Cập nhật nhân vật")
     public ResponseEntity<ApiResponse<WorkCharacterResponse>> updateCharacter(
             @PathVariable UUID characterId,
-            @NotNull @Valid @RequestBody UpdateWorkCharacterRequest request
+            @Valid @RequestBody UpdateWorkCharacterRequest request
     ) {
         WorkCharacterResponse result = workCharacterService.updateCharacter(characterId, request);
 

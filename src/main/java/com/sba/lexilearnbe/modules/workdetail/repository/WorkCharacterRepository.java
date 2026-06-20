@@ -15,10 +15,10 @@ public interface WorkCharacterRepository extends JpaRepository<WorkCharacter, UU
 
     @Override
     @Query("SELECT c FROM WorkCharacter c JOIN FETCH c.work WHERE c.id = :id")
-    Optional<WorkCharacter> findById(UUID id);
+    Optional<WorkCharacter> findById(@Param("id") UUID id);
 
     @Query("SELECT c FROM WorkCharacter c JOIN FETCH c.work WHERE c.work.id = :workId ORDER BY c.displayOrder ASC")
-    List<WorkCharacter> findAllByWork_IdOrderByDisplayOrderAsc(UUID workId);
+    List<WorkCharacter> findAllByWork_IdOrderByDisplayOrderAsc(@Param("workId") UUID workId);
 
     @Query("SELECT COALESCE(MAX(c.displayOrder), -1) FROM WorkCharacter c WHERE c.work.id = :workId")
     Integer findMaxDisplayOrderByWorkId(@Param("workId") UUID workId);

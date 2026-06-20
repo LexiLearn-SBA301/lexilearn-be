@@ -17,9 +17,6 @@ ALTER TABLE characters
     ALTER COLUMN display_order SET DEFAULT 0;
 
 ALTER TABLE characters
-    DROP CONSTRAINT IF EXISTS uq_characters_work_display_order;
-
-ALTER TABLE characters
     DROP CONSTRAINT IF EXISTS chk_characters_display_order;
 
 ALTER TABLE characters
@@ -50,9 +47,6 @@ WHERE description IS NULL;
 ALTER TABLE artistic_features
     ALTER COLUMN feature_type SET NOT NULL,
     DROP COLUMN content;
-
-ALTER TABLE artistic_features
-    DROP CONSTRAINT IF EXISTS uq_artistic_features_work_display_order;
 
 ALTER TABLE artistic_features
     DROP CONSTRAINT IF EXISTS chk_artistic_features_display_order;
