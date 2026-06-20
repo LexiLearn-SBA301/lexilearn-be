@@ -10,6 +10,10 @@ ALTER TABLE work_sections
     ADD CONSTRAINT chk_work_sections_word_count
         CHECK (word_count IS NULL OR word_count >= 0);
 
+UPDATE characters
+SET name = LEFT(name, 150)
+WHERE LENGTH(name) > 150;
+
 ALTER TABLE characters
     ALTER COLUMN name TYPE VARCHAR(150),
     ADD COLUMN role_type VARCHAR(50),
@@ -29,6 +33,10 @@ ALTER TABLE characters
 ALTER TABLE characters
     ADD CONSTRAINT chk_characters_order
         CHECK (display_order >= 0);
+
+UPDATE artistic_features
+SET title = LEFT(title, 200)
+WHERE LENGTH(title) > 200;
 
 ALTER TABLE artistic_features
     ADD COLUMN feature_type VARCHAR(50),

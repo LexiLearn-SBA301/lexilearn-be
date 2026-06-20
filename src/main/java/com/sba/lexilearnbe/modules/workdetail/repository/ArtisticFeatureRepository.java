@@ -7,18 +7,12 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface ArtisticFeatureRepository extends JpaRepository<ArtisticFeature, UUID> {
 
-    @Override
-    @Query("SELECT f FROM ArtisticFeature f JOIN FETCH f.work WHERE f.id = :id")
-    Optional<ArtisticFeature> findById(@Param("id") UUID id);
-
-    @Query("SELECT f FROM ArtisticFeature f JOIN FETCH f.work WHERE f.work.id = :workId ORDER BY f.displayOrder ASC")
-    List<ArtisticFeature> findAllByWork_IdOrderByDisplayOrderAsc(@Param("workId") UUID workId);
+    List<ArtisticFeature> findAllByWork_IdOrderByDisplayOrderAsc(UUID workId);
 
     @Query("SELECT COALESCE(MAX(f.displayOrder), -1) FROM ArtisticFeature f WHERE f.work.id = :workId")
     Integer findMaxDisplayOrderByWorkId(@Param("workId") UUID workId);
