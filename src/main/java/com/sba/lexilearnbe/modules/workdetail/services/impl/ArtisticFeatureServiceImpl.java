@@ -12,6 +12,9 @@ import com.sba.lexilearnbe.modules.workdetail.services.ArtisticFeatureService;
 import com.sba.lexilearnbe.modules.workdetail.util.WorkReadAccessValidator;
 import com.sba.lexilearnbe.shared.common.exception.ApiException;
 import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +31,9 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
     private final ArtisticFeatureRepository artisticFeatureRepository;
     private final ArtisticFeatureMapper artisticFeatureMapper;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
     @Override
     @Transactional(readOnly = true)
     public List<ArtisticFeatureResponse> getArtisticFeatures(UUID workId) {
@@ -42,7 +48,7 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
     @Override
     @Transactional
     public ArtisticFeatureResponse createArtisticFeature(UUID workId, CreateArtisticFeatureRequest request) {
-        Work work = requireWork(workId);
+        Work work = requireWorkForUpdate(workId);
 
         ArtisticFeature feature = ArtisticFeature.builder()
                 .work(work)
@@ -84,6 +90,17 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
 
         return workRepository.findById(workId)
                 .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
+    }
+
+    private Work requireWorkForUpdate(UUID workId) {
+        Objects.requireNonNull(workId, "workId không được để trống");
+
+        Work work = entityManager.find(Work.class, workId, LockModeType.PESSIMISTIC_WRITE);
+        if (work == null) {
+            throw new ApiException(ErrorCode.WORK_NOT_FOUND);
+        }
+
+        return work;
     }
 
     private Work requireReadableWork(UUID workId) {
