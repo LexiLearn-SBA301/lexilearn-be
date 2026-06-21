@@ -111,7 +111,6 @@ public class WorkServiceImpl implements WorkService {
     public void deleteWork(UUID id) {
         Work work = workRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
-        List<WorkSection> sections = workSectionRepository.findAllByWork_IdOrderByNumberAsc(id);
         workSectionRepository.deleteByWorkId(id);
         workRepository.delete(work);
     }
