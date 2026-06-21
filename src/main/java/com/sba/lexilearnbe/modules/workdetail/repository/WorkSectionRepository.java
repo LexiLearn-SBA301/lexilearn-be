@@ -3,6 +3,7 @@ package com.sba.lexilearnbe.modules.workdetail.repository;
 import com.sba.lexilearnbe.modules.workdetail.entity.WorkSection;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -27,4 +28,7 @@ public interface WorkSectionRepository extends JpaRepository<WorkSection, UUID> 
     boolean existsByWork_IdAndNumber(UUID workId, Integer number);
 
     boolean existsByWork_IdAndNumberAndIdNot(UUID workId, Integer number, UUID sectionId);
+    @Modifying
+    @Query("DELETE FROM WorkSection ws WHERE ws.work.id = :workId")
+    void deleteByWorkId(@Param("workId") UUID workId);
 }

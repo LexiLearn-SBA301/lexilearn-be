@@ -42,4 +42,15 @@ public class WorkRequest {
 
     @NotBlank(message = "Thời kỳ không được để trống")
     private String period;
+
+    @NotNull(message = "Năm xuất bản không được để trống")
+    private Integer publishYear;
+    private String originalTitle;
+    private Integer grade;
+    private Integer semester;
+    private String historicalContext;
+    private String realisticValue;
+    private String humanisticValue;
+    private String artisticValue;
+    private String quoteAttribution;
 }

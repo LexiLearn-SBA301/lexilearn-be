@@ -11,6 +11,8 @@ import com.sba.lexilearnbe.modules.work.repository.AuthorRepository;
 import com.sba.lexilearnbe.modules.work.repository.WorkRepository;
 import com.sba.lexilearnbe.modules.work.services.WorkService;
 import com.sba.lexilearnbe.modules.work.utils.SlugUtils;
+import com.sba.lexilearnbe.modules.workdetail.entity.WorkSection;
+import com.sba.lexilearnbe.modules.workdetail.repository.WorkSectionRepository;
 import com.sba.lexilearnbe.shared.common.exception.ApiException;
 import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -30,10 +33,14 @@ public class WorkServiceImpl implements WorkService {
     private final AuthorRepository authorRepository;
     private final WorkRepository workRepository;
     private final WorkMapper workMapper;
+    private final WorkSectionRepository workSectionRepository;
 
     @Override
     public Page<WorkSummaryResponse> getWorksByFilter(String genre, String period, String searchKeyword, Pageable pageable) {
-        Page<Work> worksPage = workRepository.findWorksWithFilter(genre, period, searchKeyword, pageable);
+        String safeGenre = StringUtils.hasText(genre) ? genre.trim() : null;
+        String safePeriod = StringUtils.hasText(period) ? period.trim() : null;
+        String safeSearch = StringUtils.hasText(searchKeyword) ? searchKeyword.trim() : "";
+        Page<Work> worksPage = workRepository.findWorksWithFilter(safeGenre, safePeriod, safeSearch, pageable);
         if (worksPage.isEmpty()) {
             return Page.empty(pageable);
         }
@@ -47,11 +54,15 @@ public class WorkServiceImpl implements WorkService {
         );
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     @Override
     public WorkDetailResponse getWorkDetail(String slug) {
+        if (!StringUtils.hasText(slug)) {
+            throw new ApiException(ErrorCode.WORK_NOT_FOUND);
+        }
+        workRepository.incrementViewCountBySlug(slug.trim());
         return workMapper.toDetailResponse(
-                workRepository.findBySlug(slug)
+                workRepository.findBySlug(slug.trim())
                         .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND))
         );
     }
@@ -100,9 +111,7 @@ public class WorkServiceImpl implements WorkService {
     public void deleteWork(UUID id) {
         Work work = workRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
-
-        // Cẩn thận: Nếu tác phẩm này đã bị Thành viên C tạo "work_sections" (nội dung đọc)
-        // hoặc bị Thành viên D "bookmark", DB sẽ chặn xóa. Nhưng hiện tại chưa làm nên xóa vật lý thoải mái.
+        workSectionRepository.deleteByWorkId(id);
         workRepository.delete(work);
     }
 
