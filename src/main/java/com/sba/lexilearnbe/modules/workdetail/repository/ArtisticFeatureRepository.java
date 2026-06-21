@@ -14,12 +14,12 @@ import java.util.UUID;
 @Repository
 public interface ArtisticFeatureRepository extends JpaRepository<ArtisticFeature, UUID> {
 
-    @Override
-    @EntityGraph(attributePaths = "work")
-    Optional<ArtisticFeature> findById(UUID id);
-
     @EntityGraph(attributePaths = "work")
     List<ArtisticFeature> findAllByWork_IdOrderByDisplayOrderAsc(UUID workId);
+
+    @EntityGraph(attributePaths = "work")
+    @Query("SELECT f FROM ArtisticFeature f WHERE f.id = :id")
+    Optional<ArtisticFeature> findByIdWithWork(@Param("id") UUID id);
 
     @Query("SELECT COALESCE(MAX(f.displayOrder), -1) FROM ArtisticFeature f WHERE f.work.id = :workId")
     Integer findMaxDisplayOrderByWorkId(@Param("workId") UUID workId);

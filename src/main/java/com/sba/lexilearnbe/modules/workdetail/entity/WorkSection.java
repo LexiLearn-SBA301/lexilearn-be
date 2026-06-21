@@ -37,12 +37,12 @@ public class WorkSection extends BaseEntity {
     @Column(nullable = false)
     private Integer number;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false, length = 300)
     private String title;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "word_count", nullable = false)
+    @Column(name = "word_count")
     private Integer wordCount;
 }

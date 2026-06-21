@@ -1,5 +1,6 @@
 package com.sba.lexilearnbe.modules.workdetail.dto.response;
 
+import com.sba.lexilearnbe.modules.workdetail.enums.WorkCharacterRoleType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,6 +20,7 @@ public class WorkCharacterResponse {
     private UUID id;
     private UUID workId;
     private String name;
+    private WorkCharacterRoleType roleType;
     private String description;
     private String analysis;
     private Integer displayOrder;
