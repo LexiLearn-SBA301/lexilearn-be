@@ -18,4 +18,6 @@ public class WorkSummaryResponse {
     private String subGenre;
     private String famousQuote;
     private List<String> tags;
+    private String genre;
+    private Integer publishYear;
 }
