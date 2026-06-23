@@ -1,0 +1,151 @@
+package com.sba.lexilearnbe.modules.work.services.impl;
+
+import com.sba.lexilearnbe.modules.work.entity.Work;
+import com.sba.lexilearnbe.modules.work.repository.WorkRepository;
+import com.sba.lexilearnbe.modules.work.dto.request.CreateWorkSectionRequest;
+import com.sba.lexilearnbe.modules.work.dto.request.UpdateWorkSectionRequest;
+import com.sba.lexilearnbe.modules.work.dto.response.WorkSectionDetailResponse;
+import com.sba.lexilearnbe.modules.work.dto.response.WorkSectionSummaryResponse;
+import com.sba.lexilearnbe.modules.work.entity.WorkSection;
+import com.sba.lexilearnbe.modules.work.mapper.WorkSectionMapper;
+import com.sba.lexilearnbe.modules.work.repository.WorkSectionRepository;
+import com.sba.lexilearnbe.modules.work.services.WorkSectionService;
+import com.sba.lexilearnbe.modules.work.utils.WordCountCalculator;
+import com.sba.lexilearnbe.modules.work.utils.WorkReadAccessValidator;
+import com.sba.lexilearnbe.shared.common.exception.ApiException;
+import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
+import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class WorkSectionServiceImpl implements WorkSectionService {
+
+    private final WorkRepository workRepository;
+    private final WorkSectionRepository workSectionRepository;
+    private final WorkSectionMapper workSectionMapper;
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<WorkSectionSummaryResponse> getSections(UUID workId) {
+        requireReadableWork(workId);
+
+        return workSectionRepository.findAllByWork_IdOrderByNumberAsc(workId)
+                .stream()
+                .map(workSectionMapper::toSummary)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public WorkSectionDetailResponse getSection(UUID sectionId) {
+        WorkSection section = requireSection(sectionId);
+        WorkReadAccessValidator.validate(section.getWork());
+
+        return workSectionMapper.toDetail(section);
+    }
+
+    @Override
+    @Transactional
+    public WorkSectionDetailResponse createSection(UUID workId, CreateWorkSectionRequest request) {
+        Work work = requireWork(workId);
+        Integer sectionNumber = request.getNumber() != null
+                ? request.getNumber()
+                : getNextNumber(workId);
+
+        validateUniqueNumber(workId, sectionNumber, null);
+
+        WorkSection section = WorkSection.builder()
+                .work(work)
+                .number(sectionNumber)
+                .title(request.getTitle().trim())
+                .content(request.getContent())
+                .wordCount(WordCountCalculator.count(request.getContent()))
+                .build();
+
+        try {
+            return workSectionMapper.toDetail(workSectionRepository.saveAndFlush(section));
+        } catch (DataIntegrityViolationException exception) {
+            throw new ApiException(
+                    ErrorCode.VALIDATION_ERROR,
+                    "Số thứ tự phần văn bản đã tồn tại trong tác phẩm"
+            );
+        }
+    }
+
+    @Override
+    @Transactional
+    public WorkSectionDetailResponse updateSection(UUID sectionId, UpdateWorkSectionRequest request) {
+        WorkSection section = requireSection(sectionId);
+
+        if (request.getNumber() != null) {
+            validateUniqueNumber(section.getWork().getId(), request.getNumber(), sectionId);
+            section.setNumber(request.getNumber());
+        }
+        if (request.getTitle() != null) {
+            section.setTitle(request.getTitle().trim());
+        }
+        if (request.getContent() != null) {
+            section.setContent(request.getContent());
+            section.setWordCount(WordCountCalculator.count(request.getContent()));
+        }
+
+        try {
+            return workSectionMapper.toDetail(workSectionRepository.saveAndFlush(section));
+        } catch (DataIntegrityViolationException exception) {
+            throw new ApiException(
+                    ErrorCode.VALIDATION_ERROR,
+                    "Số thứ tự phần văn bản đã tồn tại trong tác phẩm"
+            );
+        }
+    }
+
+    @Override
+    @Transactional
+    public void deleteSection(UUID sectionId) {
+        workSectionRepository.delete(requireSection(sectionId));
+    }
+
+    private Work requireWork(UUID workId) {
+        Objects.requireNonNull(workId, "workId không được để trống");
+
+        return workRepository.findById(workId)
+                .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
+    }
+
+    private Work requireReadableWork(UUID workId) {
+        Work work = requireWork(workId);
+        WorkReadAccessValidator.validate(work);
+        return work;
+    }
+
+    private WorkSection requireSection(UUID sectionId) {
+        Objects.requireNonNull(sectionId, "sectionId không được để trống");
+
+        return workSectionRepository.findByIdWithWork(sectionId)
+                .orElseThrow(() -> new ApiException(ErrorCode.SECTION_NOT_FOUND));
+    }
+
+    private void validateUniqueNumber(UUID workId, Integer number, UUID excludedSectionId) {
+        boolean exists = excludedSectionId == null
+                ? workSectionRepository.existsByWork_IdAndNumber(workId, number)
+                : workSectionRepository.existsByWork_IdAndNumberAndIdNot(workId, number, excludedSectionId);
+
+        if (exists) {
+            throw new ApiException(
+                    ErrorCode.VALIDATION_ERROR,
+                    "Số thứ tự phần văn bản đã tồn tại trong tác phẩm"
+            );
+        }
+    }
+
+    private int getNextNumber(UUID workId) {
+        return workSectionRepository.findMaxNumberByWorkId(workId) + 1;
+    }
+}

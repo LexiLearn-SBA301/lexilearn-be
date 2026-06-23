@@ -1,8 +1,10 @@
 package com.sba.lexilearnbe.modules.work.controller;
 
-import com.sba.lexilearnbe.modules.work.dto.request.WorkRequest;
-import com.sba.lexilearnbe.modules.work.dto.response.WorkDetailResponse;
-import com.sba.lexilearnbe.modules.work.dto.response.WorkSummaryResponse;
+import com.sba.lexilearnbe.modules.work.dto.request.*;
+import com.sba.lexilearnbe.modules.work.dto.response.*;
+import com.sba.lexilearnbe.modules.work.services.ArtisticFeatureService;
+import com.sba.lexilearnbe.modules.work.services.WorkCharacterService;
+import com.sba.lexilearnbe.modules.work.services.WorkSectionService;
 import com.sba.lexilearnbe.modules.work.services.WorkService;
 import com.sba.lexilearnbe.shared.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,6 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -28,6 +31,9 @@ import java.util.UUID;
 public class WorkController {
 
     private final WorkService workService;
+    private final WorkSectionService workSectionService;
+    private final WorkCharacterService workCharacterService;
+    private final ArtisticFeatureService artisticFeatureService;
 
     // ── PUBLIC APIs (Dành cho độc giả) ───────────────────────────────────────
     @GetMapping("/works")
@@ -57,6 +63,72 @@ public class WorkController {
 
         return ResponseEntity.ok(response);
     }
+
+
+    @GetMapping("/works/{workId}/sections")
+    @Operation(summary = "Lấy danh sách phần văn bản của tác phẩm")
+    public ResponseEntity<ApiResponse<List<WorkSectionSummaryResponse>>> getSections(
+            @PathVariable UUID workId
+    ) {
+        List<WorkSectionSummaryResponse> result = workSectionService.getSections(workId);
+
+        ApiResponse<List<WorkSectionSummaryResponse>> response =
+                ApiResponse.<List<WorkSectionSummaryResponse>>builder()
+                        .message("Lấy danh sách phần văn bản thành công")
+                        .result(result)
+                        .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/sections/{sectionId}")
+    @Operation(summary = "Lấy nội dung một phần văn bản")
+    public ResponseEntity<ApiResponse<WorkSectionDetailResponse>> getSection(
+            @PathVariable UUID sectionId
+    ) {
+        WorkSectionDetailResponse result = workSectionService.getSection(sectionId);
+
+        ApiResponse<WorkSectionDetailResponse> response =
+                ApiResponse.<WorkSectionDetailResponse>builder()
+                        .message("Lấy nội dung phần văn bản thành công")
+                        .result(result)
+                        .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/works/{workId}/characters")
+    @Operation(summary = "Lấy danh sách nhân vật của tác phẩm")
+    public ResponseEntity<ApiResponse<List<WorkCharacterResponse>>> getCharacters(
+            @PathVariable UUID workId
+    ) {
+        List<WorkCharacterResponse> result = workCharacterService.getCharacters(workId);
+
+        ApiResponse<List<WorkCharacterResponse>> response =
+                ApiResponse.<List<WorkCharacterResponse>>builder()
+                        .message("Lấy danh sách nhân vật thành công")
+                        .result(result)
+                        .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/works/{workId}/artistic-features")
+    @Operation(summary = "Lấy danh sách đặc điểm nghệ thuật của tác phẩm")
+    public ResponseEntity<ApiResponse<List<ArtisticFeatureResponse>>> getArtisticFeatures(
+            @PathVariable UUID workId
+    ) {
+        List<ArtisticFeatureResponse> result = artisticFeatureService.getArtisticFeatures(workId);
+
+        ApiResponse<List<ArtisticFeatureResponse>> response =
+                ApiResponse.<List<ArtisticFeatureResponse>>builder()
+                        .message("Lấy danh sách đặc điểm nghệ thuật thành công")
+                        .result(result)
+                        .build();
+
+        return ResponseEntity.ok(response);
+    }
+
     // ── ADMIN APIs (Dành cho Quản trị viên) ───────────────────────────────────
     @PostMapping("/admin/works")
     @PreAuthorize("hasRole('ADMIN')")
@@ -92,6 +164,147 @@ public class WorkController {
     public ResponseEntity<ApiResponse<Void>> deleteWork(@PathVariable UUID id) {
 
         workService.deleteWork(id);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/works/{workId}/sections")
+    @Operation(summary = "Tạo phần văn bản mới")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<WorkSectionDetailResponse>> createSection(
+            @PathVariable UUID workId,
+            @Valid @RequestBody CreateWorkSectionRequest request
+    ) {
+        WorkSectionDetailResponse result = workSectionService.createSection(workId, request);
+
+        ApiResponse<WorkSectionDetailResponse> response =
+                ApiResponse.<WorkSectionDetailResponse>builder()
+                        .message("Tạo phần văn bản thành công")
+                        .result(result)
+                        .build();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PatchMapping("/sections/{sectionId}")
+    @Operation(summary = "Cập nhật phần văn bản")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<WorkSectionDetailResponse>> updateSection(
+            @PathVariable UUID sectionId,
+            @Valid @RequestBody UpdateWorkSectionRequest request
+    ) {
+        WorkSectionDetailResponse result = workSectionService.updateSection(sectionId, request);
+
+        ApiResponse<WorkSectionDetailResponse> response =
+                ApiResponse.<WorkSectionDetailResponse>builder()
+                        .message("Cập nhật phần văn bản thành công")
+                        .result(result)
+                        .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/sections/{sectionId}")
+    @Operation(summary = "Xóa phần văn bản")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteSection(
+            @PathVariable UUID sectionId
+    ) {
+        workSectionService.deleteSection(sectionId);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/works/{workId}/characters")
+    @Operation(summary = "Tạo nhân vật")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<WorkCharacterResponse>> createCharacter(
+            @PathVariable UUID workId,
+            @Valid @RequestBody CreateWorkCharacterRequest request
+    ) {
+        WorkCharacterResponse result = workCharacterService.createCharacter(workId, request);
+
+        ApiResponse<WorkCharacterResponse> response =
+                ApiResponse.<WorkCharacterResponse>builder()
+                        .message("Tạo nhân vật thành công")
+                        .result(result)
+                        .build();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PatchMapping("/characters/{characterId}")
+    @Operation(summary = "Cập nhật nhân vật")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<WorkCharacterResponse>> updateCharacter(
+            @PathVariable UUID characterId,
+            @Valid @RequestBody UpdateWorkCharacterRequest request
+    ) {
+        WorkCharacterResponse result = workCharacterService.updateCharacter(characterId, request);
+
+        ApiResponse<WorkCharacterResponse> response =
+                ApiResponse.<WorkCharacterResponse>builder()
+                        .message("Cập nhật nhân vật thành công")
+                        .result(result)
+                        .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/characters/{characterId}")
+    @Operation(summary = "Xóa nhân vật")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteCharacter(
+            @PathVariable UUID characterId
+    ) {
+        workCharacterService.deleteCharacter(characterId);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/works/{workId}/artistic-features")
+    @Operation(summary = "Tạo đặc điểm nghệ thuật")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<ArtisticFeatureResponse>> createArtisticFeature(
+            @PathVariable UUID workId,
+            @Valid @RequestBody CreateArtisticFeatureRequest request
+    ) {
+        ArtisticFeatureResponse result = artisticFeatureService.createArtisticFeature(workId, request);
+
+        ApiResponse<ArtisticFeatureResponse> response =
+                ApiResponse.<ArtisticFeatureResponse>builder()
+                        .message("Tạo đặc điểm nghệ thuật thành công")
+                        .result(result)
+                        .build();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PatchMapping("/artistic-features/{featureId}")
+    @Operation(summary = "Cập nhật đặc điểm nghệ thuật")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<ArtisticFeatureResponse>> updateArtisticFeature(
+            @PathVariable UUID featureId,
+            @Valid @RequestBody UpdateArtisticFeatureRequest request
+    ) {
+        ArtisticFeatureResponse result = artisticFeatureService.updateArtisticFeature(featureId, request);
+
+        ApiResponse<ArtisticFeatureResponse> response =
+                ApiResponse.<ArtisticFeatureResponse>builder()
+                        .message("Cập nhật đặc điểm nghệ thuật thành công")
+                        .result(result)
+                        .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/artistic-features/{featureId}")
+    @Operation(summary = "Xóa đặc điểm nghệ thuật")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteArtisticFeature(
+            @PathVariable UUID featureId
+    ) {
+        artisticFeatureService.deleteArtisticFeature(featureId);
 
         return ResponseEntity.noContent().build();
     }
