@@ -1,15 +1,18 @@
 package com.sba.lexilearnbe.modules.auth.services;
 
+import com.sba.lexilearnbe.modules.auth.dto.request.ForgotPasswordRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.LoginRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.RefreshTokenRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.RegisterRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.ResendOtpRequest;
+import com.sba.lexilearnbe.modules.auth.dto.request.ResetPasswordRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.VerifyOtpRequest;
 import com.sba.lexilearnbe.modules.auth.dto.response.TokenResponse;
 
 public interface AuthService {
 
     String OTP_TYPE_REGISTER = "register";
+    String OTP_TYPE_RESET_PASSWORD = "reset_password";
 
     /**
      * Đăng ký account mới: tạo account UNVERIFIED + gán role USER,
@@ -49,4 +52,17 @@ public interface AuthService {
      * @param authorizationHeader header Authorization (Bearer ...), có thể null
      */
     void logout(RefreshTokenRequest request, String authorizationHeader);
+
+    /**
+     * Quên mật khẩu: sinh OTP đặt lại mật khẩu và gửi qua email.
+     * Chống dò email (user enumeration): luôn trả về như nhau dù email
+     * có tồn tại hay không — chỉ thực sự gửi OTP khi account tồn tại & ACTIVE.
+     */
+    void forgotPassword(ForgotPasswordRequest request);
+
+    /**
+     * Đặt lại mật khẩu bằng OTP: verify mã (type reset_password),
+     * cập nhật mật khẩu mới (BCrypt) cho account ACTIVE.
+     */
+    void resetPassword(ResetPasswordRequest request);
 }
