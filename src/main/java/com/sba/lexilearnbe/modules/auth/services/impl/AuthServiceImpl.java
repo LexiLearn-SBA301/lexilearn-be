@@ -8,6 +8,7 @@ import com.sba.lexilearnbe.modules.auth.dto.request.ResendOtpRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.ResetPasswordRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.VerifyOtpRequest;
 import com.sba.lexilearnbe.modules.auth.dto.response.TokenResponse;
+import com.sba.lexilearnbe.modules.auth.dto.response.UserResponse;
 import com.sba.lexilearnbe.modules.auth.entity.Account;
 import com.sba.lexilearnbe.modules.auth.entity.Role;
 import com.sba.lexilearnbe.modules.auth.enums.AccountStatus;
@@ -32,6 +33,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -255,6 +258,30 @@ public class AuthServiceImpl implements AuthService {
         accountRepository.save(account);
 
         log.info("Đặt lại mật khẩu thành công: {}", email);
+    }
+
+    /**
+     * Lấy thông tin profile của account đang đăng nhập.
+     * Dùng findWithRolesById (@EntityGraph) để eager-load roles, tránh LazyInitializationException.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public UserResponse getCurrentUser(UUID accountId) {
+        Account account = accountRepository.findWithRolesById(accountId)
+                .orElseThrow(() -> new ApiException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+        Set<String> roleNames = account.getRoles().stream()
+                .map(Role::getName)
+                .collect(Collectors.toSet());
+
+        return UserResponse.builder()
+                .id(account.getId())
+                .email(account.getEmail())
+                .status(account.getStatus())
+                .roles(roleNames)
+                .emailVerifiedAt(account.getEmailVerifiedAt())
+                .createdAt(account.getCreatedAt())
+                .build();
     }
 
     /**
