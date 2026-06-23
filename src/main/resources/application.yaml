@@ -44,6 +44,11 @@ spring:
             enable: true
 
 app:
+  cors:
+    # Danh sách origin FE được phép, cách nhau bởi dấu phẩy.
+    # Production set qua biến môi trường CORS_ALLOWED_ORIGINS.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
   otp:
     length: 6
     max-sends-per-hour: 5   # chống spam OTP
