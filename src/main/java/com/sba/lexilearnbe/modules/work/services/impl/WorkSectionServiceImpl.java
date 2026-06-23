@@ -44,8 +44,14 @@ public class WorkSectionServiceImpl implements WorkSectionService {
 
     @Override
     @Transactional(readOnly = true)
-    public WorkSectionDetailResponse getSection(UUID sectionId) {
+    public WorkSectionDetailResponse getSection(UUID workId, UUID sectionId) {
+        Objects.requireNonNull(workId, "workId không được để trống");
+
         WorkSection section = requireSection(sectionId);
+        if (!workId.equals(section.getWork().getId())) {
+            throw new ApiException(ErrorCode.SECTION_NOT_FOUND);
+        }
+
         WorkReadAccessValidator.validate(section.getWork());
 
         return workSectionMapper.toDetail(section);

@@ -12,7 +12,7 @@ public interface WorkSectionService {
 
     List<WorkSectionSummaryResponse> getSections(UUID workId);
 
-    WorkSectionDetailResponse getSection(UUID sectionId);
+    WorkSectionDetailResponse getSection(UUID workId, UUID sectionId);
 
     WorkSectionDetailResponse createSection(UUID workId, CreateWorkSectionRequest request);
 

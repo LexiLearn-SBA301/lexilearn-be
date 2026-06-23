@@ -81,12 +81,13 @@ public class WorkController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/sections/{sectionId}")
+    @GetMapping("/works/{workId}/sections/{sectionId}")
     @Operation(summary = "Lấy nội dung một phần văn bản")
     public ResponseEntity<ApiResponse<WorkSectionDetailResponse>> getSection(
+            @PathVariable UUID workId,
             @PathVariable UUID sectionId
     ) {
-        WorkSectionDetailResponse result = workSectionService.getSection(sectionId);
+        WorkSectionDetailResponse result = workSectionService.getSection(workId, sectionId);
 
         ApiResponse<WorkSectionDetailResponse> response =
                 ApiResponse.<WorkSectionDetailResponse>builder()
@@ -168,7 +169,7 @@ public class WorkController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/works/{workId}/sections")
+    @PostMapping("/admin/works/{workId}/sections")
     @Operation(summary = "Tạo phần văn bản mới")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<WorkSectionDetailResponse>> createSection(
@@ -186,7 +187,7 @@ public class WorkController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PatchMapping("/sections/{sectionId}")
+    @PatchMapping("/admin/sections/{sectionId}")
     @Operation(summary = "Cập nhật phần văn bản")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<WorkSectionDetailResponse>> updateSection(
@@ -204,7 +205,7 @@ public class WorkController {
         return ResponseEntity.ok(response);
     }
 
-    @DeleteMapping("/sections/{sectionId}")
+    @DeleteMapping("/admin/sections/{sectionId}")
     @Operation(summary = "Xóa phần văn bản")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteSection(
@@ -215,7 +216,7 @@ public class WorkController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/works/{workId}/characters")
+    @PostMapping("/admin/works/{workId}/characters")
     @Operation(summary = "Tạo nhân vật")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<WorkCharacterResponse>> createCharacter(
@@ -233,7 +234,7 @@ public class WorkController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PatchMapping("/characters/{characterId}")
+    @PatchMapping("/admin/characters/{characterId}")
     @Operation(summary = "Cập nhật nhân vật")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<WorkCharacterResponse>> updateCharacter(
@@ -251,7 +252,7 @@ public class WorkController {
         return ResponseEntity.ok(response);
     }
 
-    @DeleteMapping("/characters/{characterId}")
+    @DeleteMapping("/admin/characters/{characterId}")
     @Operation(summary = "Xóa nhân vật")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteCharacter(
@@ -262,7 +263,7 @@ public class WorkController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/works/{workId}/artistic-features")
+    @PostMapping("/admin/works/{workId}/artistic-features")
     @Operation(summary = "Tạo đặc điểm nghệ thuật")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<ArtisticFeatureResponse>> createArtisticFeature(
@@ -280,7 +281,7 @@ public class WorkController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PatchMapping("/artistic-features/{featureId}")
+    @PatchMapping("/admin/artistic-features/{featureId}")
     @Operation(summary = "Cập nhật đặc điểm nghệ thuật")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<ArtisticFeatureResponse>> updateArtisticFeature(
@@ -298,7 +299,7 @@ public class WorkController {
         return ResponseEntity.ok(response);
     }
 
-    @DeleteMapping("/artistic-features/{featureId}")
+    @DeleteMapping("/admin/artistic-features/{featureId}")
     @Operation(summary = "Xóa đặc điểm nghệ thuật")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteArtisticFeature(
