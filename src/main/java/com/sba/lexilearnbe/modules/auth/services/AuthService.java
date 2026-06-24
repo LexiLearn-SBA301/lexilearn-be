@@ -8,6 +8,9 @@ import com.sba.lexilearnbe.modules.auth.dto.request.ResendOtpRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.ResetPasswordRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.VerifyOtpRequest;
 import com.sba.lexilearnbe.modules.auth.dto.response.TokenResponse;
+import com.sba.lexilearnbe.modules.auth.dto.response.UserResponse;
+
+import java.util.UUID;
 
 public interface AuthService {
 
@@ -65,4 +68,13 @@ public interface AuthService {
      * cập nhật mật khẩu mới (BCrypt) cho account ACTIVE.
      */
     void resetPassword(ResetPasswordRequest request);
+
+    /**
+     * Lấy thông tin profile của account đang đăng nhập.
+     * Fetch kèm roles (EntityGraph) để tránh LazyInitializationException.
+     *
+     * @param accountId UUID của account lấy từ JWT principal
+     * @return UserResponse chứa id, email, status, roles, emailVerifiedAt, createdAt
+     */
+    UserResponse getCurrentUser(UUID accountId);
 }
