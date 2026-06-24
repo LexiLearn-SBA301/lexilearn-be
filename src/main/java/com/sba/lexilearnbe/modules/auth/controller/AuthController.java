@@ -1,9 +1,11 @@
 package com.sba.lexilearnbe.modules.auth.controller;
 
+import com.sba.lexilearnbe.modules.auth.dto.request.ForgotPasswordRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.LoginRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.RefreshTokenRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.RegisterRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.ResendOtpRequest;
+import com.sba.lexilearnbe.modules.auth.dto.request.ResetPasswordRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.VerifyOtpRequest;
 import com.sba.lexilearnbe.modules.auth.dto.response.TokenResponse;
 import com.sba.lexilearnbe.modules.auth.services.AuthService;
@@ -68,6 +70,32 @@ public class AuthController {
 
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .message("Đã gửi lại mã OTP. Vui lòng kiểm tra email.")
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Quên mật khẩu", description = "Gửi OTP đặt lại mật khẩu qua email. Luôn trả về thành công dù email có tồn tại hay không (chống dò email)")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request);
+
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .message("Nếu email tồn tại trong hệ thống, mã OTP đặt lại mật khẩu đã được gửi. Vui lòng kiểm tra email.")
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/reset-password")
+    @Operation(summary = "Đặt lại mật khẩu", description = "Verify OTP và cập nhật mật khẩu mới cho account")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .message("Đặt lại mật khẩu thành công. Bạn có thể đăng nhập bằng mật khẩu mới.")
                 .timestamp(LocalDateTime.now())
                 .build();
 

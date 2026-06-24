@@ -1,9 +1,11 @@
 package com.sba.lexilearnbe.modules.auth.services.impl;
 
+import com.sba.lexilearnbe.modules.auth.dto.request.ForgotPasswordRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.LoginRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.RefreshTokenRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.RegisterRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.ResendOtpRequest;
+import com.sba.lexilearnbe.modules.auth.dto.request.ResetPasswordRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.VerifyOtpRequest;
 import com.sba.lexilearnbe.modules.auth.dto.response.TokenResponse;
 import com.sba.lexilearnbe.modules.auth.entity.Account;
@@ -208,6 +210,54 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
+     * Quên mật khẩu:
+     * 1. Lowercase email, tìm account
+     * 2. Chỉ sinh & gửi OTP đặt lại mật khẩu khi account tồn tại VÀ đang ACTIVE
+     *    (UNVERIFIED/LOCKED hoặc email không tồn tại → bỏ qua âm thầm)
+     * 3. Luôn trả về như nhau cho phía controller → chống dò email (user enumeration)
+     * Không @Transactional: chỉ thao tác Redis + gửi mail, không ghi DB.
+     */
+    @Override
+    public void forgotPassword(ForgotPasswordRequest request) {
+        String email = request.getEmail().trim().toLowerCase();
+
+        Account account = accountRepository.findByEmail(email).orElse(null);
+        if (account == null || account.getStatus() != AccountStatus.ACTIVE) {
+            // Không lộ việc email có tồn tại / trạng thái account hay không
+            log.info("Yêu cầu quên mật khẩu cho email không hợp lệ (bỏ qua âm thầm): {}", email);
+            return;
+        }
+
+        sendResetPasswordOtp(email);
+        log.info("Gửi OTP đặt lại mật khẩu: {}", email);
+    }
+
+    /**
+     * Đặt lại mật khẩu bằng OTP:
+     * 1. Tìm account theo email (lowercase)
+     * 2. Account phải ACTIVE (chưa verify / bị khóa → không cho đặt lại)
+     * 3. Verify OTP (type reset_password) — sai/hết hạn/quá số lần thử → OtpService throw
+     * 4. Mã hóa BCrypt mật khẩu mới và lưu
+     */
+    @Override
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        String email = request.getEmail().trim().toLowerCase();
+
+        Account account = accountRepository.findByEmail(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+        validateActive(account);
+
+        otpService.verifyOtp(OTP_TYPE_RESET_PASSWORD, email, request.getOtp());
+
+        account.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        accountRepository.save(account);
+
+        log.info("Đặt lại mật khẩu thành công: {}", email);
+    }
+
+    /**
      * Blacklist access token lấy từ header Authorization.
      * Header thiếu / token hết hạn / không hợp lệ → bỏ qua (token đã chết
      * thì không còn gì để thu hồi) — không được làm fail luồng logout.
@@ -250,6 +300,15 @@ public class AuthServiceImpl implements AuthService {
      */
     private void sendRegisterOtp(String email) {
         String otp = otpService.generateOtp(OTP_TYPE_REGISTER, email);
+        eventPublisher.publishEvent(new OtpEmailEvent(email, otp, RedisKeys.TTL_OTP / 60));
+    }
+
+    /**
+     * Sinh OTP đặt lại mật khẩu (đã gồm rate limit) rồi publish event gửi mail.
+     * Dùng chung cơ chế gửi mail bất đồng bộ với OTP đăng ký (OtpEmailListener).
+     */
+    private void sendResetPasswordOtp(String email) {
+        String otp = otpService.generateOtp(OTP_TYPE_RESET_PASSWORD, email);
         eventPublisher.publishEvent(new OtpEmailEvent(email, otp, RedisKeys.TTL_OTP / 60));
     }
 
