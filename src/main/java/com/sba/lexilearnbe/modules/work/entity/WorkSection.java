@@ -1,8 +1,11 @@
 package com.sba.lexilearnbe.modules.work.entity;
 
+import com.sba.lexilearnbe.modules.work.enums.WorkSectionContentType;
 import com.sba.lexilearnbe.shared.infrastructure.persistence.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -41,6 +44,10 @@ public class WorkSection extends BaseEntity {
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "content_type", nullable = false, length = 30)
+    private WorkSectionContentType contentType;
 
     @Column(name = "word_count")
     private Integer wordCount;

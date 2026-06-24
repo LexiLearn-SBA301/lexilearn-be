@@ -1,5 +1,6 @@
 package com.sba.lexilearnbe.modules.work.dto.request;
 
+import com.sba.lexilearnbe.modules.work.enums.WorkSectionContentType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
@@ -16,9 +17,11 @@ public class CreateWorkSectionRequest {
     private Integer number;
 
     @NotBlank(message = "Tiêu đề phần văn bản không được để trống")
-    @Size(max = 255, message = "Tiêu đề phần văn bản tối đa 255 ký tự")
+    @Size(max = 300, message = "Tiêu đề phần văn bản tối đa 300 ký tự")
     private String title;
 
     @NotBlank(message = "Nội dung phần văn bản không được để trống")
     private String content;
+
+    private WorkSectionContentType contentType;
 }
