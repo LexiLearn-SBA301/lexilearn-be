@@ -45,7 +45,6 @@ public class WorkRequest {
     private String period;
 
     @NotNull(message = "Năm xuất bản không được để trống")
-    private Set<UUID> tagIds;
     private Integer publishYear;
     private String originalTitle;
     private Integer grade;
@@ -55,4 +54,5 @@ public class WorkRequest {
     private String humanisticValue;
     private String artisticValue;
     private String quoteAttribution;
+    private Set<UUID> tagIds;
 }

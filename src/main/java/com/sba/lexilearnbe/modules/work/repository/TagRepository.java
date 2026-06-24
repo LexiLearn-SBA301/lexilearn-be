@@ -17,7 +17,7 @@ public interface TagRepository extends JpaRepository<Tag, UUID> {
     Page<Tag> findByNameContainingIgnoreCase(String name, Pageable pageable);
     boolean existsByNameIgnoreCase(String name);
     boolean existsByNameIgnoreCaseAndIdNot(String name, UUID id);
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = "DELETE FROM work_tags WHERE tag_id = :tagId", nativeQuery = true)
     void deleteTagFromAllWorks(@Param("tagId") UUID tagId);
 }

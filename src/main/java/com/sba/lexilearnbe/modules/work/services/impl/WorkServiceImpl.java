@@ -55,14 +55,14 @@ public class WorkServiceImpl implements WorkService {
         );
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     @Override
     public WorkDetailResponse getWorkDetail(String slug) {
         if (!StringUtils.hasText(slug)) {
             throw new ApiException(ErrorCode.WORK_NOT_FOUND);
         }
         return workMapper.toDetailResponse(
-                workRepository.findBySlug(slug.trim())
+                workRepository.findPublishedBySlug(slug.trim())
                         .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND))
         );
     }
