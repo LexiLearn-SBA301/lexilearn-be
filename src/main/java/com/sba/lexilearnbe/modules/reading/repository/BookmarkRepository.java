@@ -1,7 +1,6 @@
 package com.sba.lexilearnbe.modules.reading.repository;
 
 import com.sba.lexilearnbe.modules.reading.entity.Bookmark;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
