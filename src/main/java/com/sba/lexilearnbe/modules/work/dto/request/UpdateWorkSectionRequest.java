@@ -1,5 +1,6 @@
 package com.sba.lexilearnbe.modules.work.dto.request;
 
+import com.sba.lexilearnbe.modules.work.enums.WorkSectionContentType;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
@@ -15,7 +16,7 @@ public class UpdateWorkSectionRequest {
     @Positive(message = "Số thứ tự phần văn bản phải lớn hơn 0")
     private Integer number;
 
-    @Size(max = 255, message = "Tiêu đề phần văn bản tối đa 255 ký tự")
+    @Size(max = 300, message = "Tiêu đề phần văn bản tối đa 300 ký tự")
     @Pattern(
             regexp = "(?s).*\\S.*",
             message = "Tiêu đề phần văn bản không được để trống"
@@ -27,4 +28,6 @@ public class UpdateWorkSectionRequest {
             message = "Nội dung phần văn bản không được để trống"
     )
     private String content;
+
+    private WorkSectionContentType contentType;
 }

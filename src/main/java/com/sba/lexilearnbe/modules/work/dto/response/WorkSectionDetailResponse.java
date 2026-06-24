@@ -1,5 +1,6 @@
 package com.sba.lexilearnbe.modules.work.dto.response;
 
+import com.sba.lexilearnbe.modules.work.enums.WorkSectionContentType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,6 +22,7 @@ public class WorkSectionDetailResponse {
     private Integer number;
     private String title;
     private String content;
+    private WorkSectionContentType contentType;
     private Integer wordCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
