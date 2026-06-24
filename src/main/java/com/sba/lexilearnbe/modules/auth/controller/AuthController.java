@@ -8,6 +8,7 @@ import com.sba.lexilearnbe.modules.auth.dto.request.ResendOtpRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.ResetPasswordRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.VerifyOtpRequest;
 import com.sba.lexilearnbe.modules.auth.dto.response.TokenResponse;
+import com.sba.lexilearnbe.modules.auth.dto.response.UserResponse;
 import com.sba.lexilearnbe.modules.auth.services.AuthService;
 import com.sba.lexilearnbe.shared.common.response.ApiResponse;
 import com.sba.lexilearnbe.shared.infrastructure.config.OpenApiConfig;
@@ -20,6 +21,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -27,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -141,6 +145,22 @@ public class AuthController {
 
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .message("Đăng xuất thành công.")
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/me")
+    @Operation(summary = "Lấy thông tin tài khoản hiện tại", description = "Trả về profile của account đang đăng nhập (id, email, trạng thái, vai trò, ngày xác thực email)")
+    // Override @SecurityRequirements rỗng ở class: /me yêu cầu Bearer token — hiện ổ khóa trên Swagger
+    @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_BEARER)
+    public ResponseEntity<ApiResponse<UserResponse>> me(@AuthenticationPrincipal UUID accountId) {
+        UserResponse user = authService.getCurrentUser(accountId);
+
+        ApiResponse<UserResponse> response = ApiResponse.<UserResponse>builder()
+                .message("Lấy thông tin tài khoản thành công.")
+                .result(user)
                 .timestamp(LocalDateTime.now())
                 .build();
 
