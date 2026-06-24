@@ -1,194 +1,61 @@
-1. users
+Tích hợp Module Reading (Tiến độ đọc & Highlight)
+Tài liệu này mô tả kế hoạch triển khai các tính năng lưu tiến độ đọc (Bookmarks) và highlight/ghi chú (Notes) vào màn hình Reading hiện tại của module Work (ReadingPage.jsx & ReadingPageContent.jsx).
 
-id            UUID         PK
-email         VARCHAR(255) NOT NULL, UNIQUE
-password_hash VARCHAR(255) NOT NULL
-name          VARCHAR(100) NOT NULL
-avatar_url    VARCHAR(500) NULL
-role          VARCHAR(20)  NOT NULL DEFAULT 'USER'  -- USER | ADMIN
-is_active     BOOLEAN      DEFAULT TRUE
-created_at    TIMESTAMP    DEFAULT NOW()
-updated_at    TIMESTAMP    DEFAULT NOW()
-  
----
-2. authors
+Mục tiêu
+Lưu & Khôi phục Tiến độ đọc (Bookmarks): Tự động lưu tiến độ (section hiện tại, scroll offset, phần trăm) và khôi phục khi user quay lại tác phẩm.
+Đánh dấu & Ghi chú (Highlights/Notes): Cho phép user bôi đen văn bản để highlight (với màu tùy chọn), thêm ghi chú cá nhân và xem lại các highlight cũ.
+Quản lý danh sách: Trang (hoặc block) hiển thị danh sách các tác phẩm "Đang đọc" (Bookmarks).
+WARNING
 
-id           UUID         PK
-name         VARCHAR(200) NOT NULL
-pen_name     VARCHAR(200) NULL
-slug         VARCHAR(200) NOT NULL, UNIQUE
-birth_year   INT          NULL
-death_year   INT          NULL
-period       VARCHAR(30)  NOT NULL  -- dan_gian | trung_dai | hien_dai
-bio          TEXT         NULL
-portrait_url VARCHAR(500) NULL
-created_at   TIMESTAMP    DEFAULT NOW()
-updated_at   TIMESTAMP    DEFAULT NOW()
+Open Questions (Câu hỏi cần làm rõ)
 
-  ---
-3. works ← gộp work_contexts
-
-id                 UUID         PK
-author_id          UUID         NULL, FK → authors.id   -- NULL = khuyết danh
-title              VARCHAR(300) NOT NULL
-slug               VARCHAR(300) NOT NULL, UNIQUE
-original_title     VARCHAR(300) NULL
-genre              VARCHAR(50)  NOT NULL  -- truyen_ngan | tho_ca | kich_ban | khao_cuu
-sub_genre          VARCHAR(50)  NULL
-period             VARCHAR(30)  NOT NULL  -- dan_gian | trung_dai | hien_dai
-grade              SMALLINT     NULL      -- 10 | 11 | 12
-semester           SMALLINT     NULL      -- 1 | 2
-publish_year       INT          NULL
-summary            TEXT         NULL
-cover_url          VARCHAR(500) NULL
-is_published       BOOLEAN      DEFAULT TRUE
--- gộp từ work_contexts
-historical_context TEXT         NULL
-realistic_value    TEXT         NULL
-humanistic_value   TEXT         NULL
-artistic_value     TEXT         NULL
-famous_quote       TEXT         NULL
-quote_attribution  VARCHAR(300) NULL
-created_at         TIMESTAMP    DEFAULT NOW()
-updated_at         TIMESTAMP    DEFAULT NOW()
-
-  ---
-4. characters
-
-id            UUID         PK
-work_id       UUID         NOT NULL, FK → works.id
-name          VARCHAR(150) NOT NULL
-role_type     VARCHAR(50)  NULL  -- chinh | phu | phan_dien | nguoi_dan_chuyen
-description   TEXT         NULL
-analysis      TEXT         NULL
-display_order INT          DEFAULT 0
-created_at    TIMESTAMP    DEFAULT NOW()
-updated_at    TIMESTAMP    DEFAULT NOW()
-
-  ---
-5. artistic_features
-
-id            UUID         PK
-work_id       UUID         NOT NULL, FK → works.id
-feature_type  VARCHAR(50)  NOT NULL  -- narrative | language | imagery | structure | symbolism
-title         VARCHAR(200) NOT NULL
-description   TEXT         NULL
-display_order INT          DEFAULT 0
-created_at    TIMESTAMP    DEFAULT NOW()
-updated_at    TIMESTAMP    DEFAULT NOW()
-
-  ---
-6. work_sections ← đổi tên từ chapters
-
-id         UUID         PK
-work_id    UUID         NOT NULL, FK → works.id
-number     INT          NOT NULL
-title      VARCHAR(300) NOT NULL
-content    TEXT         NOT NULL
-word_count INT          NULL
-created_at TIMESTAMP    DEFAULT NOW()
-updated_at TIMESTAMP    DEFAULT NOW()
-
-UNIQUE(work_id, number)
-  
----
-7. chunks
-
-id           UUID         PK
-section_id   UUID         NOT NULL, FK → work_sections.id
-content      TEXT         NOT NULL
-embedding    VECTOR(768)  NOT NULL   -- đổi số nếu đổi model
-start_offset INT          NULL       -- vị trí trong section.content
-end_offset   INT          NULL
-chunk_order  INT          NOT NULL
-token_count  INT          NULL
-created_at   TIMESTAMP    DEFAULT NOW()
-
-  ---
-8. tags
-
-id          UUID         PK
-name        VARCHAR(100) NOT NULL, UNIQUE
-slug        VARCHAR(100) NOT NULL, UNIQUE
-description TEXT         NULL
-created_at  TIMESTAMP    DEFAULT NOW()
-updated_at  TIMESTAMP    DEFAULT NOW()
-  
----
-9. work_tags
-
-work_id UUID  FK → works.id
-tag_id  UUID  FK → tags.id
-
-PRIMARY KEY (work_id, tag_id)
-
-  ---
-10. bookmarks
-
-id                 UUID         PK
-user_id            UUID         NOT NULL, FK → users.id
-work_id            UUID         NOT NULL, FK → works.id
-current_section_id UUID         NULL, FK → work_sections.id
-position           INT          DEFAULT 0
-progress_percent   DECIMAL(5,2) DEFAULT 0
-is_completed       BOOLEAN      DEFAULT FALSE
-completed_at       TIMESTAMP    NULL
-created_at         TIMESTAMP    DEFAULT NOW()
-updated_at         TIMESTAMP    DEFAULT NOW()
-
-UNIQUE(user_id, work_id)
-  
----
-11. notes ← bỏ work_id
-
-id               UUID         PK
-user_id          UUID         NOT NULL, FK → users.id
-section_id       UUID         NOT NULL, FK → work_sections.id
-start_offset     INT          NOT NULL
-end_offset       INT          NOT NULL
-highlighted_text TEXT         NOT NULL
-user_note        TEXT         NULL
-color            VARCHAR(20)  DEFAULT 'yellow'  -- yellow | green | red | blue
-created_at       TIMESTAMP    DEFAULT NOW()
-updated_at       TIMESTAMP    DEFAULT NOW()
-
-  ---
-12. chat_sessions ← bỏ message_count
-
-id         UUID         PK
-user_id    UUID         NOT NULL, FK → users.id
-work_id    UUID         NULL, FK → works.id   -- SET NULL khi work bị xóa
-title      VARCHAR(300) NOT NULL
-created_at TIMESTAMP    DEFAULT NOW()
-updated_at TIMESTAMP    DEFAULT NOW()
-
-  ---
-13. chat_messages
-
-id             UUID         PK
-session_id     UUID         NOT NULL, FK → chat_sessions.id
-cited_note_id  UUID         NULL, FK → notes.id
-role           VARCHAR(20)  NOT NULL  -- USER | ASSISTANT
-content        TEXT         NOT NULL
-context_chunks JSONB        NULL
-token_count    INT          NULL
-created_at     TIMESTAMP    DEFAULT NOW()
-
-  ---
-Indexes
-
-CREATE INDEX idx_works_grade_genre    ON works(grade, genre, period) WHERE is_published = TRUE;
-CREATE INDEX idx_works_author         ON works(author_id);
-CREATE INDEX idx_works_slug           ON works(slug);
-
-CREATE INDEX idx_sections_work_number ON work_sections(work_id, number);
-
-CREATE INDEX idx_chunks_embedding     ON chunks USING hnsw (embedding vector_cosine_ops);
-CREATE INDEX idx_chunks_section       ON chunks(section_id, chunk_order);
-
-CREATE INDEX idx_bookmarks_user       ON bookmarks(user_id, updated_at DESC);
-
-CREATE INDEX idx_notes_user_section   ON notes(user_id, section_id);
-
-CREATE INDEX idx_chat_sessions_user   ON chat_sessions(user_id, updated_at DESC);
-CREATE INDEX idx_chat_messages_session ON chat_messages(session_id, created_at);
+Tính toán Offset cho Highlight: Hiện tại văn bản văn xuôi đang được split bằng \n\n để map ra thẻ <p>. Việc user bôi đen văn bản xuyên qua các đoạn <p> sẽ làm cho việc tính startOffset và endOffset theo chuỗi content gốc gặp khó khăn. Đề xuất: Có thể render toàn bộ content dưới dạng dangerouslySetInnerHTML (sau khi đã escape HTML và thay \n\n bằng <br/><br/>), kết hợp bọc các thẻ <mark> vào các đoạn highlight. Hoặc sử dụng một thư viện highlight text chuyên dụng (như mark.js). Bạn nghĩ sao về cách render này?
+Danh sách Đang đọc: Theo prompt có mô tả về "Trang Đang đọc hoặc block Tiếp tục đọc". Màn hình hiển thị danh sách Bookmark này dự kiến sẽ đặt ở đâu trong UI (VD: Sidebar thư viện, Trang chủ, Menu User)? Tôi có nên tạo hẳn một page riêng (/dang-doc) cho nó không?
+UI Menu Highlight: Hiện tại khi bôi đen có popup "Hỏi Mộc Bản AI". Tôi sẽ thay thế/bổ sung popup đó thành một toolbar nhỏ có các nút chọn màu highlight (Vàng, Xanh lá, Xanh dương, Đỏ) và nút "Thêm ghi chú". Đồng ý chứ?
+Trạng thái lưu: Nút "Đánh dấu hoàn thành" và trạng thái lưu/xoá tiến độ sẽ được thiết kế ở đâu cho hợp lý? (VD: Đặt dưới nút "Chuyển chương tiếp theo" ở cuối bài, hoặc trên thanh header thả xuống?)
+Phân tích & Thay đổi Đề xuất
+1. API Services & Hooks (src/services/reading.service.js & src/features/library/hooks/useReading.js)
+   reading.service.js
+   Tạo các hàm gọi API sử dụng Axios/fetch hiện tại của dự án:
+   getBookmarks(): Gọi GET /api/v1/me/bookmarks
+   upsertBookmark(workId, payload): Gọi PUT /api/v1/me/bookmarks/{workId}
+   deleteBookmark(workId): Gọi DELETE /api/v1/me/bookmarks/{workId}
+   getSectionNotes(sectionId): Gọi GET /api/v1/sections/{sectionId}/notes
+   createNote(sectionId, payload): Gọi POST /api/v1/sections/{sectionId}/notes
+   deleteNote(noteId): Gọi DELETE /api/v1/notes/{noteId}
+   useReading.js
+   Bọc các hàm API thành React Query hooks:
+   useGetBookmarks()
+   useUpsertBookmark()
+   useDeleteBookmark()
+   useGetSectionNotes(sectionId)
+   useCreateNote()
+   useDeleteNote()
+2. Logic Lưu & Khôi phục Tiến độ (ReadingPage.jsx & ReadingPageContent.jsx)
+   Khôi phục (Restore Progress):
+   Khi ReadingPage.jsx mount, lấy danh sách bookmarks và lọc ra bookmark có workId khớp với ID của tác phẩm đang đọc.
+   Nếu bookmark đó trỏ tới một currentSectionId khác với section đang mở và người dùng vừa mới vào trang (chưa tự ý chọn mục lục), hiển thị một Toast/Modal nhỏ hỏi "Tiếp tục đọc từ chương X?".
+   Hoặc nếu user vừa vào /thu-vien/:slug/doc, sẽ tự động redirect tới /thu-vien/:slug/doc/:sectionId dựa theo bookmark.
+   Lưu tiến độ (Save Progress):
+   Lắng nghe event scroll trong ReadingPageContent. Cần debounce ~1500ms để không gọi API liên tục.
+   Hoặc chỉ lưu khi: Chuyển chương (handleNavigate), User rời khỏi trang (useEffect cleanup), hoặc nhấn nút "Lưu thủ công".
+3. Logic Highlight & Note (ReadingPageContent.jsx)
+   Render text kèm Highlight:
+   Thay vì split('\n\n') đơn giản, cần xử lý content gốc, nhúng các tag <mark class="highlight-yellow" data-note-id="xxx">...</mark> dựa vào mảng notes trả về từ API.
+   Cần viết một parser nhỏ để mapping các khoảng [startOffset, endOffset] mà không làm bể HTML.
+   Lấy offset khi bôi đen (Highlight Selection):
+   Tính toán global startOffset và endOffset của khoảng text đã chọn so với content gốc.
+   Điều này yêu cầu bọc container bài đọc, dùng TreeWalker hoặc Range API để tính tổng số ký tự text node đi qua tính từ đầu container.
+   Hiển thị tooltip chọn màu highlight và input nhập user note. Gọi useCreateNote mutation, sau đó invalidate useGetSectionNotes để re-render highlight mới.
+4. UI/UX
+   Cập nhật popup khi bôi đen text: Có thể chọn màu để Highlight + Icon Note + Icon Hỏi AI.
+   Sidebar hoặc Modal cho phép xem danh sách các Notes đã tạo trong section hiện tại (Click vào để scroll tới đoạn đó).
+   Cuối màn hình ReadingPageContent, thêm phần "Tiến độ: X% - Đánh dấu hoàn thành".
+   Verification Plan
+   Manual Verification
+   Đăng nhập với account test (test.reader@lexilearn.local).
+   Truy cập một tác phẩm (VD: Chị em Thúy Kiều), scroll giữa chừng. Reload trang xem có khôi phục vị trí không.
+   Chuyển sang section khác, tắt trình duyệt, mở lại, xem có đúng mở section đó ra không.
+   Bôi đen một đoạn văn xuôi và thơ, thêm highlight. Đảm bảo offset tính đúng và gọi API 200 OK.
+   Nhấn hoàn thành tác phẩm và kiểm tra API.
+   Xin hãy xem qua phần Open Questions ở trên và phản hồi để tôi có thể bắt đầu code.
