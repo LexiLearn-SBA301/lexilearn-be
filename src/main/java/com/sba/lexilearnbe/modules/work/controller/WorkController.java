@@ -42,11 +42,12 @@ public class WorkController {
             @RequestParam(required = false) String genre,
             @RequestParam(required = false) String period,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String tag,
             @ParameterObject @PageableDefault(size = 24, sort = "viewCount", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         ApiResponse<Page<WorkSummaryResponse>> response = ApiResponse.<Page<WorkSummaryResponse>>builder()
                 .message("Lấy danh sách tác phẩm thành công")
-                .result(workService.getWorksByFilter(genre, period, search, pageable))
+                .result(workService.getWorksByFilter(genre, period, search, tag, pageable))
                 .build();
 
         return ResponseEntity.ok(response);

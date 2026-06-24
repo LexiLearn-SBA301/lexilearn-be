@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.validator.constraints.URL;
 
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
@@ -44,6 +45,7 @@ public class WorkRequest {
     private String period;
 
     @NotNull(message = "Năm xuất bản không được để trống")
+    private Set<UUID> tagIds;
     private Integer publishYear;
     private String originalTitle;
     private Integer grade;

@@ -8,6 +8,7 @@ import com.sba.lexilearnbe.modules.work.entity.Tag;
 import com.sba.lexilearnbe.modules.work.entity.Work;
 import com.sba.lexilearnbe.modules.work.mapper.WorkMapper;
 import com.sba.lexilearnbe.modules.work.repository.AuthorRepository;
+import com.sba.lexilearnbe.modules.work.repository.TagRepository;
 import com.sba.lexilearnbe.modules.work.repository.WorkRepository;
 import com.sba.lexilearnbe.modules.work.services.WorkService;
 import com.sba.lexilearnbe.modules.work.utils.SlugUtils;
@@ -18,9 +19,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import com.sba.lexilearnbe.modules.work.specification.WorkSpecification;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -33,17 +36,16 @@ public class WorkServiceImpl implements WorkService {
     private final WorkRepository workRepository;
     private final WorkMapper workMapper;
     private final WorkSectionRepository workSectionRepository;
+    private final TagRepository tagRepository;
 
     @Override
-    public Page<WorkSummaryResponse> getWorksByFilter(String genre, String period, String searchKeyword, Pageable pageable) {
-        String safeGenre = StringUtils.hasText(genre) ? genre.trim() : null;
-        String safePeriod = StringUtils.hasText(period) ? period.trim() : null;
-        String safeSearch = StringUtils.hasText(searchKeyword) ? searchKeyword.trim() : "";
-        Page<Work> worksPage = workRepository.findWorksWithFilter(safeGenre, safePeriod, safeSearch, pageable);
+    public Page<WorkSummaryResponse> getWorksByFilter(String genre, String period, String searchKeyword, String tag, Pageable pageable) {
+        Specification<Work> spec = WorkSpecification.filterWorks(genre, period, tag, searchKeyword);
+        Page<Work> worksPage = workRepository.findAll(spec, pageable);
+
         if (worksPage.isEmpty()) {
             return Page.empty(pageable);
         }
-
         List<Work> worksWithTags = workRepository.fetchTagsForWorks(worksPage.getContent());
         Map<UUID, Set<Tag>> tagsMap = worksWithTags.stream()
                 .collect(Collectors.toMap(Work::getId, Work::getTags));
@@ -59,7 +61,6 @@ public class WorkServiceImpl implements WorkService {
         if (!StringUtils.hasText(slug)) {
             throw new ApiException(ErrorCode.WORK_NOT_FOUND);
         }
-        workRepository.incrementViewCountBySlug(slug.trim());
         return workMapper.toDetailResponse(
                 workRepository.findBySlug(slug.trim())
                         .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND))
@@ -81,6 +82,10 @@ public class WorkServiceImpl implements WorkService {
         Work work = workMapper.toEntity(request);
         work.setAuthor(author);
         work.setSlug(slug);
+        if (request.getTagIds() != null && !request.getTagIds().isEmpty()) {
+            Set<Tag> tags = new HashSet<>(tagRepository.findAllById(request.getTagIds()));
+            work.setTags(tags);
+        }
 
         try {
             Work savedWork = workRepository.save(work);
@@ -101,6 +106,12 @@ public class WorkServiceImpl implements WorkService {
         workMapper.updateEntityFromRequest(request, work);
         work.setAuthor(author);
 
+        if (request.getTagIds() != null && !request.getTagIds().isEmpty()) {
+            Set<Tag> tags = new HashSet<>(tagRepository.findAllById(request.getTagIds()));
+            work.setTags(tags);
+        } else {
+            work.getTags().clear();
+        }
         Work updatedWork = workRepository.save(work);
         return workMapper.toDetailResponse(updatedWork);
     }
