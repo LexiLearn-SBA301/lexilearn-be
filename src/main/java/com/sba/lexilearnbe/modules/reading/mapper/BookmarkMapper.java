@@ -5,7 +5,7 @@ import com.sba.lexilearnbe.modules.reading.dto.response.BookmarkSectionResponse;
 import com.sba.lexilearnbe.modules.reading.dto.response.BookmarkWorkResponse;
 import com.sba.lexilearnbe.modules.reading.entity.Bookmark;
 import com.sba.lexilearnbe.modules.work.entity.Work;
-import com.sba.lexilearnbe.modules.workdetail.entity.WorkSection;
+import com.sba.lexilearnbe.modules.work.entity.WorkSection;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;

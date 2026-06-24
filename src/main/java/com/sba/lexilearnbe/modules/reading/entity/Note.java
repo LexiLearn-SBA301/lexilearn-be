@@ -2,7 +2,7 @@ package com.sba.lexilearnbe.modules.reading.entity;
 
 import com.sba.lexilearnbe.modules.auth.entity.Account;
 import com.sba.lexilearnbe.modules.reading.enums.NoteColor;
-import com.sba.lexilearnbe.modules.workdetail.entity.WorkSection;
+import com.sba.lexilearnbe.modules.work.entity.WorkSection;
 import com.sba.lexilearnbe.shared.infrastructure.persistence.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
