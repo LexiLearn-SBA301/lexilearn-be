@@ -7,6 +7,7 @@ import com.sba.lexilearnbe.modules.work.dto.request.UpdateWorkSectionRequest;
 import com.sba.lexilearnbe.modules.work.dto.response.WorkSectionDetailResponse;
 import com.sba.lexilearnbe.modules.work.dto.response.WorkSectionSummaryResponse;
 import com.sba.lexilearnbe.modules.work.entity.WorkSection;
+import com.sba.lexilearnbe.modules.work.enums.WorkSectionContentType;
 import com.sba.lexilearnbe.modules.work.mapper.WorkSectionMapper;
 import com.sba.lexilearnbe.modules.work.repository.WorkSectionRepository;
 import com.sba.lexilearnbe.modules.work.services.WorkSectionService;
@@ -72,6 +73,7 @@ public class WorkSectionServiceImpl implements WorkSectionService {
                 .number(sectionNumber)
                 .title(request.getTitle().trim())
                 .content(request.getContent())
+                .contentType(resolveContentType(request.getContentType(), work))
                 .wordCount(WordCountCalculator.count(request.getContent()))
                 .build();
 
@@ -100,6 +102,9 @@ public class WorkSectionServiceImpl implements WorkSectionService {
         if (request.getContent() != null) {
             section.setContent(request.getContent());
             section.setWordCount(WordCountCalculator.count(request.getContent()));
+        }
+        if (request.getContentType() != null) {
+            section.setContentType(request.getContentType());
         }
 
         try {
@@ -153,5 +158,15 @@ public class WorkSectionServiceImpl implements WorkSectionService {
 
     private int getNextNumber(UUID workId) {
         return workSectionRepository.findMaxNumberByWorkId(workId) + 1;
+    }
+
+    private WorkSectionContentType resolveContentType(WorkSectionContentType contentType, Work work) {
+        if (contentType != null) {
+            return contentType;
+        }
+        if ("truyen_tho".equalsIgnoreCase(work.getGenre()) || "luc_bat".equalsIgnoreCase(work.getSubGenre())) {
+            return WorkSectionContentType.POETRY;
+        }
+        return WorkSectionContentType.PROSE;
     }
 }
