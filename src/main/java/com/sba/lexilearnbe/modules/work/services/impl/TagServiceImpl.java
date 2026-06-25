@@ -3,8 +3,10 @@ package com.sba.lexilearnbe.modules.work.services.impl;
 import com.sba.lexilearnbe.modules.work.dto.request.TagRequest;
 import com.sba.lexilearnbe.modules.work.dto.response.TagResponse;
 import com.sba.lexilearnbe.modules.work.entity.Tag;
+import com.sba.lexilearnbe.modules.work.entity.Work;
 import com.sba.lexilearnbe.modules.work.mapper.TagMapper;
 import com.sba.lexilearnbe.modules.work.repository.TagRepository;
+import com.sba.lexilearnbe.modules.work.repository.WorkRepository;
 import com.sba.lexilearnbe.modules.work.services.TagService;
 import com.sba.lexilearnbe.modules.work.utils.SlugUtils;
 import com.sba.lexilearnbe.shared.common.exception.ApiException;
@@ -23,7 +25,8 @@ import java.util.UUID;
 public class TagServiceImpl implements TagService {
 
     private final TagRepository tagRepository;
-    private final TagMapper tagMapper; // Inject TagMapper vào
+    private final TagMapper tagMapper;
+    private final WorkRepository workRepository;
 
     @Override
     public Page<TagResponse> getAllTags(String search, Pageable pageable) {
@@ -67,15 +70,16 @@ public class TagServiceImpl implements TagService {
     }
 
     @Override
-    @Transactional // Đã khóa chặt an toàn
+    @Transactional
     public void deleteTag(UUID id) {
         Tag tag = tagRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.TAG_NOT_FOUND));
 
-        // Bài học cũ: Xóa sạch liên kết ở bảng ruột (work_tags) bằng 1 hit SQL
-        tagRepository.deleteTagFromAllWorks(id);
+        List<Work> works = workRepository.findByTagsId(id);
+        for (Work work : works) {
+            work.getTags().remove(tag);
+        }
 
-        // Sau đó mới xóa cái bìa (Tag)
         tagRepository.delete(tag);
     }
 }

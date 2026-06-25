@@ -31,4 +31,5 @@ public interface WorkRepository extends JpaRepository<Work, UUID>, JpaSpecificat
     @EntityGraph(attributePaths = {"author", "tags"})
     @Query("SELECT w FROM Work w WHERE w.slug = :slug AND w.isPublished = true")
     Optional<Work> findPublishedBySlug(@Param("slug") String slug);
+    List<Work> findByTagsId(UUID tagId);
 }
