@@ -22,6 +22,7 @@ public interface WorkRepository extends JpaRepository<Work, UUID>, JpaSpecificat
     Optional<Work> findBySlug(String slug);
     boolean existsBySlug(String slug);
     @Override
+    @EntityGraph(attributePaths = {"author", "tags"})
     Page<Work> findAll(Specification<Work> spec, Pageable pageable);
     @EntityGraph(attributePaths = {"author", "tags"})
     List<Work> findAllByIdIn(List<UUID> ids);
