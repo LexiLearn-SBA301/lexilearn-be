@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.validator.constraints.URL;
 
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
@@ -53,4 +54,5 @@ public class WorkRequest {
     private String humanisticValue;
     private String artisticValue;
     private String quoteAttribution;
+    private Set<UUID> tagIds;
 }

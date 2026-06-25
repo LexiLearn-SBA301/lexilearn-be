@@ -42,6 +42,11 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/v3/api-docs/**",
+            "/api/v1/works/{slug}",
+            "/api/v1/works",
+            "/api/v1/tags",
+            "/api/v1/authors/{slug}",
+            "/api/v1/authors",
     };
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -61,6 +66,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+
                         .anyRequest().authenticated()
                 )
                 // Trả lỗi 401/403 dạng JSON đúng format ApiResponse thay vì response rỗng mặc định

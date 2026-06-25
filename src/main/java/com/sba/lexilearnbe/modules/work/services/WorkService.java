@@ -9,7 +9,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.UUID;
 
 public interface WorkService {
-    Page<WorkSummaryResponse> getWorksByFilter(String genre, String period, String search, Pageable pageable);
+    Page<WorkSummaryResponse> getWorksByFilter(String genre, String period, String search, String tag, Pageable pageable);
 
     WorkDetailResponse getWorkDetail(String slug);
     WorkDetailResponse createWork(WorkRequest request);
