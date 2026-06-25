@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/authors")
 @RequiredArgsConstructor
 @Tag(name = "Author", description = "Các API dành cho dữ liệu Tác giả")
 public class AuthorController {
@@ -29,7 +29,7 @@ public class AuthorController {
     private final AuthorService authorService;
 
     // ── PUBLIC APIs (Dành cho độc giả) ───────────────────────────────────────
-    @GetMapping("/authors")
+    @GetMapping
     @Operation(summary = "Lấy danh sách Tác giả", description = "Lấy danh sách tất cả tác giả, có hỗ trợ tìm kiếm và phân trang")
     public ResponseEntity<ApiResponse<Page<AuthorSummaryResponse>>> getAuthors(
             @RequestParam(required = false) String search,
@@ -43,7 +43,7 @@ public class AuthorController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/authors/{slug}")
+    @GetMapping("/{slug}")
     @Operation(summary = "Lấy chi tiết Tác giả", description = "Lấy thông tin chi tiết tiểu sử của tác giả dựa vào slug")
     public ResponseEntity<ApiResponse<AuthorDetailResponse>> getAuthorDetail(@PathVariable String slug) {
 
@@ -55,7 +55,7 @@ public class AuthorController {
         return ResponseEntity.ok(response);
     }
     // ── ADMIN APIs (Dành cho Quản trị viên) ───────────────────────────────────
-    @PostMapping("/admin/authors")
+    @PostMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Tạo mới tác giả", description = "Yêu cầu quyền ADMIN")
     public ResponseEntity<ApiResponse<AuthorDetailResponse>> createAuthor(@Valid @RequestBody AuthorRequest request) {
@@ -65,7 +65,7 @@ public class AuthorController {
                 .build());
     }
 
-    @PatchMapping("/admin/authors/{id}")
+    @PatchMapping("/admin/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Cập nhật thông tin tác giả", description = "Yêu cầu quyền ADMIN")
     public ResponseEntity<ApiResponse<AuthorDetailResponse>> updateAuthor(
@@ -78,7 +78,7 @@ public class AuthorController {
                 .build());
     }
 
-    @DeleteMapping("/admin/authors/{id}")
+    @DeleteMapping("/admin/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Xóa tác giả", description = "Yêu cầu quyền ADMIN")
     public ResponseEntity<ApiResponse<Void>> deleteAuthor(@PathVariable UUID id) {
