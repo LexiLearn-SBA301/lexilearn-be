@@ -3,10 +3,8 @@ package com.sba.lexilearnbe.modules.work.services.impl;
 import com.sba.lexilearnbe.modules.work.dto.request.TagRequest;
 import com.sba.lexilearnbe.modules.work.dto.response.TagResponse;
 import com.sba.lexilearnbe.modules.work.entity.Tag;
-import com.sba.lexilearnbe.modules.work.entity.Work;
 import com.sba.lexilearnbe.modules.work.mapper.TagMapper;
 import com.sba.lexilearnbe.modules.work.repository.TagRepository;
-import com.sba.lexilearnbe.modules.work.repository.WorkRepository;
 import com.sba.lexilearnbe.modules.work.services.TagService;
 import com.sba.lexilearnbe.modules.work.utils.SlugUtils;
 import com.sba.lexilearnbe.shared.common.exception.ApiException;
@@ -17,7 +15,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -26,7 +23,6 @@ public class TagServiceImpl implements TagService {
 
     private final TagRepository tagRepository;
     private final TagMapper tagMapper;
-    private final WorkRepository workRepository;
 
     @Override
     public Page<TagResponse> getAllTags(String search, Pageable pageable) {
@@ -72,14 +68,10 @@ public class TagServiceImpl implements TagService {
     @Override
     @Transactional
     public void deleteTag(UUID id) {
-        Tag tag = tagRepository.findById(id)
-                .orElseThrow(() -> new ApiException(ErrorCode.TAG_NOT_FOUND));
-
-        List<Work> works = workRepository.findByTagsId(id);
-        for (Work work : works) {
-            work.getTags().remove(tag);
+        if (!tagRepository.existsById(id)) {
+            throw new ApiException(ErrorCode.TAG_NOT_FOUND);
         }
-
-        tagRepository.delete(tag);
+        tagRepository.deleteTagFromAllWorks(id);
+        tagRepository.deleteById(id);
     }
 }
