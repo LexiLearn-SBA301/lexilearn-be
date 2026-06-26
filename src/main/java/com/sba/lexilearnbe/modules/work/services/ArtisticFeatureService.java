@@ -13,7 +13,7 @@ public interface ArtisticFeatureService {
 
     ArtisticFeatureResponse createArtisticFeature(UUID workId, CreateArtisticFeatureRequest request);
 
-    ArtisticFeatureResponse updateArtisticFeature(UUID featureId, UpdateArtisticFeatureRequest request);
+    ArtisticFeatureResponse updateArtisticFeature(UUID workId, UUID featureId, UpdateArtisticFeatureRequest request);
 
-    void deleteArtisticFeature(UUID featureId);
+    void deleteArtisticFeature(UUID workId, UUID featureId);
 }
