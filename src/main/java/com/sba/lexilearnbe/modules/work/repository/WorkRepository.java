@@ -24,8 +24,8 @@ public interface WorkRepository extends JpaRepository<Work, UUID>, JpaSpecificat
     @Override
     @EntityGraph(attributePaths = {"author"})
     Page<Work> findAll(Specification<Work> spec, Pageable pageable);
-    @Query("SELECT DISTINCT w FROM Work w LEFT JOIN FETCH w.tags WHERE w IN :works")
-    List<Work> fetchTagsForWorks(@Param("works") List<Work> works);
+    @EntityGraph(attributePaths = {"author", "tags"})
+    List<Work> findAllByIdIn(List<UUID> ids);
 
     boolean existsByAuthorId(UUID id);
     @EntityGraph(attributePaths = {"author", "tags"})

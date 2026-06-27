@@ -18,6 +18,7 @@ import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -41,18 +42,30 @@ public class WorkServiceImpl implements WorkService {
     @Override
     public Page<WorkSummaryResponse> getWorksByFilter(String genre, String period, String searchKeyword, String tag, Pageable pageable) {
         Specification<Work> spec = WorkSpecification.filterWorks(genre, period, tag, searchKeyword);
+
         Page<Work> worksPage = workRepository.findAll(spec, pageable);
 
         if (worksPage.isEmpty()) {
             return Page.empty(pageable);
         }
-        List<Work> worksWithTags = workRepository.fetchTagsForWorks(worksPage.getContent());
-        Map<UUID, Set<Tag>> tagsMap = worksWithTags.stream()
-                .collect(Collectors.toMap(Work::getId, Work::getTags));
 
-        return worksPage.map(work ->
-                workMapper.toSummaryResponse(work, tagsMap.getOrDefault(work.getId(), Collections.emptySet()))
-        );
+        List<UUID> workIds = worksPage.getContent().stream()
+                .map(Work::getId)
+                .toList();
+
+        List<Work> fullyFetchedWorks = workRepository.findAllByIdIn(workIds);
+
+        Map<UUID, Work> workMap = fullyFetchedWorks.stream()
+                .collect(Collectors.toMap(Work::getId, w -> w));
+
+        List<WorkSummaryResponse> responseList = worksPage.getContent().stream()
+                .map(work -> {
+                    Work fullWork = workMap.get(work.getId());
+                    return workMapper.toSummaryResponse(fullWork, fullWork.getTags());
+                })
+                .toList();
+
+        return new PageImpl<>(responseList, pageable, worksPage.getTotalElements());
     }
 
     @Transactional(readOnly = true)

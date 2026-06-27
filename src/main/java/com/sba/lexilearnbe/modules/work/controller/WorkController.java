@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/works")
 @RequiredArgsConstructor
 @Tag(name = "Work", description = "Các API dành cho Thư viện tác phẩm")
 public class WorkController {
@@ -36,7 +36,7 @@ public class WorkController {
     private final ArtisticFeatureService artisticFeatureService;
 
     // ── PUBLIC APIs (Dành cho độc giả) ───────────────────────────────────────
-    @GetMapping("/works")
+    @GetMapping
     @Operation(summary = "Lấy danh sách Tác phẩm")
     public ResponseEntity<ApiResponse<Page<WorkSummaryResponse>>> getWorks(
             @RequestParam(required = false) String genre,
@@ -53,7 +53,7 @@ public class WorkController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/works/{slug}")
+    @GetMapping("/{slug}")
     @Operation(summary = "Lấy chi tiết Tác phẩm", description = "Lấy toàn bộ thông tin chi tiết của một tác phẩm...")
     public ResponseEntity<ApiResponse<WorkDetailResponse>> getWorkDetail(@PathVariable String slug) {
 
@@ -66,7 +66,7 @@ public class WorkController {
     }
 
 
-    @GetMapping("/works/{workId}/sections")
+    @GetMapping("/{workId}/sections")
     @Operation(summary = "Lấy danh sách phần văn bản của tác phẩm")
     public ResponseEntity<ApiResponse<List<WorkSectionSummaryResponse>>> getSections(
             @PathVariable UUID workId
@@ -82,7 +82,7 @@ public class WorkController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/works/{workId}/sections/{sectionId}")
+    @GetMapping("/{workId}/sections/{sectionId}")
     @Operation(summary = "Lấy nội dung một phần văn bản")
     public ResponseEntity<ApiResponse<WorkSectionDetailResponse>> getSection(
             @PathVariable UUID workId,
@@ -99,7 +99,7 @@ public class WorkController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/works/{workId}/characters")
+    @GetMapping("/{workId}/characters")
     @Operation(summary = "Lấy danh sách nhân vật của tác phẩm")
     public ResponseEntity<ApiResponse<List<WorkCharacterResponse>>> getCharacters(
             @PathVariable UUID workId
@@ -115,7 +115,7 @@ public class WorkController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/works/{workId}/artistic-features")
+    @GetMapping("/{workId}/artistic-features")
     @Operation(summary = "Lấy danh sách đặc điểm nghệ thuật của tác phẩm")
     public ResponseEntity<ApiResponse<List<ArtisticFeatureResponse>>> getArtisticFeatures(
             @PathVariable UUID workId
@@ -132,7 +132,7 @@ public class WorkController {
     }
 
     // ── ADMIN APIs (Dành cho Quản trị viên) ───────────────────────────────────
-    @PostMapping("/admin/works")
+    @PostMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Tạo mới tác phẩm", description = "Yêu cầu quyền ADMIN")
     public ResponseEntity<ApiResponse<WorkDetailResponse>> createWork(@Valid @RequestBody WorkRequest request) {
@@ -145,7 +145,7 @@ public class WorkController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PatchMapping("/admin/works/{id}")
+    @PatchMapping("/admin/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Cập nhật tác phẩm", description = "Yêu cầu quyền ADMIN")
     public ResponseEntity<ApiResponse<WorkDetailResponse>> updateWork(
@@ -160,7 +160,7 @@ public class WorkController {
         return ResponseEntity.ok(response);
     }
 
-    @DeleteMapping("/admin/works/{id}")
+    @DeleteMapping("/admin/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Xóa tác phẩm", description = "Yêu cầu quyền ADMIN")
     public ResponseEntity<ApiResponse<Void>> deleteWork(@PathVariable UUID id) {
@@ -170,7 +170,7 @@ public class WorkController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/admin/works/{workId}/sections")
+    @PostMapping("/admin/{workId}/sections")
     @Operation(summary = "Tạo phần văn bản mới")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<WorkSectionDetailResponse>> createSection(
@@ -217,7 +217,7 @@ public class WorkController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/admin/works/{workId}/characters")
+    @PostMapping("/admin/{workId}/characters")
     @Operation(summary = "Tạo nhân vật")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<WorkCharacterResponse>> createCharacter(
@@ -264,7 +264,7 @@ public class WorkController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/admin/works/{workId}/artistic-features")
+    @PostMapping("/admin/{workId}/artistic-features")
     @Operation(summary = "Tạo đặc điểm nghệ thuật")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<ArtisticFeatureResponse>> createArtisticFeature(

@@ -15,7 +15,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -23,7 +22,7 @@ import java.util.UUID;
 public class TagServiceImpl implements TagService {
 
     private final TagRepository tagRepository;
-    private final TagMapper tagMapper; // Inject TagMapper vào
+    private final TagMapper tagMapper;
 
     @Override
     public Page<TagResponse> getAllTags(String search, Pageable pageable) {
@@ -67,15 +66,12 @@ public class TagServiceImpl implements TagService {
     }
 
     @Override
-    @Transactional // Đã khóa chặt an toàn
+    @Transactional
     public void deleteTag(UUID id) {
-        Tag tag = tagRepository.findById(id)
-                .orElseThrow(() -> new ApiException(ErrorCode.TAG_NOT_FOUND));
-
-        // Bài học cũ: Xóa sạch liên kết ở bảng ruột (work_tags) bằng 1 hit SQL
+        if (!tagRepository.existsById(id)) {
+            throw new ApiException(ErrorCode.TAG_NOT_FOUND);
+        }
         tagRepository.deleteTagFromAllWorks(id);
-
-        // Sau đó mới xóa cái bìa (Tag)
-        tagRepository.delete(tag);
+        tagRepository.deleteById(id);
     }
 }
