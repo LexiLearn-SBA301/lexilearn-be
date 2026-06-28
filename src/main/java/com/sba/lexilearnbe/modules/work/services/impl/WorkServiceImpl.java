@@ -15,6 +15,10 @@ import com.sba.lexilearnbe.modules.work.utils.SlugUtils;
 import com.sba.lexilearnbe.modules.work.repository.WorkSectionRepository;
 import com.sba.lexilearnbe.shared.common.exception.ApiException;
 import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
+import com.sba.lexilearnbe.shared.infrastructure.storage.ImageStorageService;
+import com.sba.lexilearnbe.shared.infrastructure.storage.ImageStorageTransactionManager;
+import com.sba.lexilearnbe.shared.infrastructure.storage.ImageUploadTarget;
+import com.sba.lexilearnbe.shared.infrastructure.storage.StoredImage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -38,6 +42,8 @@ public class WorkServiceImpl implements WorkService {
     private final WorkMapper workMapper;
     private final WorkSectionRepository workSectionRepository;
     private final TagRepository tagRepository;
+    private final ImageStorageService imageStorageService;
+    private final ImageStorageTransactionManager imageStorageTransactionManager;
 
     @Override
     public Page<WorkSummaryResponse> getWorksByFilter(String genre, String period, String searchKeyword, String tag, Pageable pageable) {
@@ -99,6 +105,15 @@ public class WorkServiceImpl implements WorkService {
             Set<Tag> tags = new HashSet<>(tagRepository.findAllById(request.getTagIds()));
             work.setTags(tags);
         }
+        if (request.getCover() != null) {
+            StoredImage storedImage = imageStorageService.verifyUploadedImage(
+                    request.getCover(),
+                    ImageUploadTarget.WORK_COVER
+            );
+            work.setCoverUrl(storedImage.url());
+            work.setCoverPublicId(storedImage.publicId());
+            imageStorageTransactionManager.scheduleCreate(storedImage.publicId());
+        }
 
         try {
             Work savedWork = workRepository.save(work);
@@ -125,7 +140,31 @@ public class WorkServiceImpl implements WorkService {
         } else {
             work.getTags().clear();
         }
+        if (request.getCover() != null) {
+            String oldPublicId = work.getCoverPublicId();
+            StoredImage storedImage = imageStorageService.verifyUploadedImage(
+                    request.getCover(),
+                    ImageUploadTarget.WORK_COVER
+            );
+            work.setCoverUrl(storedImage.url());
+            work.setCoverPublicId(storedImage.publicId());
+            imageStorageTransactionManager.scheduleReplacement(oldPublicId, storedImage.publicId());
+        }
         Work updatedWork = workRepository.save(work);
+        return workMapper.toDetailResponse(updatedWork);
+    }
+
+    @Override
+    @Transactional
+    public WorkDetailResponse deleteCover(UUID id) {
+        Work work = workRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
+
+        String oldPublicId = work.getCoverPublicId();
+        work.setCoverUrl(null);
+        work.setCoverPublicId(null);
+        Work updatedWork = workRepository.save(work);
+        imageStorageTransactionManager.scheduleDeletion(oldPublicId);
         return workMapper.toDetailResponse(updatedWork);
     }
 
@@ -134,8 +173,10 @@ public class WorkServiceImpl implements WorkService {
     public void deleteWork(UUID id) {
         Work work = workRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
+        String coverPublicId = work.getCoverPublicId();
         workSectionRepository.deleteByWorkId(id);
         workRepository.delete(work);
+        imageStorageTransactionManager.scheduleDeletion(coverPublicId);
     }
 
 }

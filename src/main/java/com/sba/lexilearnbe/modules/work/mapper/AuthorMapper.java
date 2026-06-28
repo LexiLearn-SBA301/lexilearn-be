@@ -13,7 +13,11 @@ public interface AuthorMapper {
 
     AuthorDetailResponse toDetailResponse(Author author);
 
+    @Mapping(target = "portraitUrl", ignore = true)
+    @Mapping(target = "portraitPublicId", ignore = true)
     Author toEntity(AuthorRequest request);
 
+    @Mapping(target = "portraitUrl", ignore = true)
+    @Mapping(target = "portraitPublicId", ignore = true)
     void updateEntityFromRequest(AuthorRequest request, @MappingTarget Author author);
 }

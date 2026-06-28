@@ -31,9 +31,13 @@ public interface WorkMapper {
     }
     @Mapping(target = "genre", source = "genre")
     @Mapping(target = "period", source = "period")
+    @Mapping(target = "coverUrl", ignore = true)
+    @Mapping(target = "coverPublicId", ignore = true)
     Work toEntity(WorkRequest request);
 
     @Mapping(target = "genre", source = "genre")
     @Mapping(target = "period", source = "period")
+    @Mapping(target = "coverUrl", ignore = true)
+    @Mapping(target = "coverPublicId", ignore = true)
     void updateEntityFromRequest(WorkRequest request, @MappingTarget Work work);
 }

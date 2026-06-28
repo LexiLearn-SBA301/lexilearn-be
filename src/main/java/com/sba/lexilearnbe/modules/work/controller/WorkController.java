@@ -134,7 +134,7 @@ public class WorkController {
     // ── ADMIN APIs (Dành cho Quản trị viên) ───────────────────────────────────
     @PostMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Tạo mới tác phẩm", description = "Yêu cầu quyền ADMIN")
+    @Operation(summary = "Tạo mới tác phẩm", description = "Có thể gửi thông tin ảnh Cloudinary đã upload trong cover. Yêu cầu quyền ADMIN")
     public ResponseEntity<ApiResponse<WorkDetailResponse>> createWork(@Valid @RequestBody WorkRequest request) {
 
         ApiResponse<WorkDetailResponse> response = ApiResponse.<WorkDetailResponse>builder()
@@ -147,7 +147,7 @@ public class WorkController {
 
     @PatchMapping("/admin/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Cập nhật tác phẩm", description = "Yêu cầu quyền ADMIN")
+    @Operation(summary = "Cập nhật tác phẩm", description = "Có thể gửi thông tin ảnh Cloudinary mới trong cover. Yêu cầu quyền ADMIN")
     public ResponseEntity<ApiResponse<WorkDetailResponse>> updateWork(
             @PathVariable UUID id,
             @Valid @RequestBody WorkRequest request
@@ -155,6 +155,18 @@ public class WorkController {
         ApiResponse<WorkDetailResponse> response = ApiResponse.<WorkDetailResponse>builder()
                 .message("Cập nhật tác phẩm thành công")
                 .result(workService.updateWork(id, request))
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/admin/{id}/cover")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Xóa ảnh bìa tác phẩm", description = "Yêu cầu quyền ADMIN")
+    public ResponseEntity<ApiResponse<WorkDetailResponse>> deleteCover(@PathVariable UUID id) {
+        ApiResponse<WorkDetailResponse> response = ApiResponse.<WorkDetailResponse>builder()
+                .message("Xóa ảnh bìa tác phẩm thành công")
+                .result(workService.deleteCover(id))
                 .build();
 
         return ResponseEntity.ok(response);

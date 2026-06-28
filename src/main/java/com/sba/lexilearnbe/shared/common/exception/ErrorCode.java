@@ -58,7 +58,9 @@ public enum ErrorCode {
 
     // ── Storage ─────────────────────────────────────────────────
     FAIL_TO_UPLOAD            ("fail_to_upload",           HttpStatus.BAD_REQUEST, "Không thể tải lên file"),
-    FAIL_TO_GENERATE_PRESIGNED_URL ("fail_to_generate_presigned_url", HttpStatus.BAD_REQUEST, "Không thể tạo presigned URL");
+    FAIL_TO_GENERATE_PRESIGNED_URL ("fail_to_generate_presigned_url", HttpStatus.BAD_REQUEST, "Không thể tạo presigned URL"),
+    FAIL_TO_GENERATE_UPLOAD_SIGNATURE ("fail_to_generate_upload_signature", HttpStatus.BAD_REQUEST, "Không thể tạo chữ ký upload"),
+    INVALID_UPLOADED_IMAGE ("invalid_uploaded_image", HttpStatus.BAD_REQUEST, "Ảnh tải lên không hợp lệ");
 
 
     private final String code;
