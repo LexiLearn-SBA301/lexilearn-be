@@ -57,7 +57,7 @@ public class AuthorController {
     // ── ADMIN APIs (Dành cho Quản trị viên) ───────────────────────────────────
     @PostMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Tạo mới tác giả", description = "Yêu cầu quyền ADMIN")
+    @Operation(summary = "Tạo mới tác giả", description = "Có thể gửi thông tin ảnh Cloudinary đã upload trong portrait. Yêu cầu quyền ADMIN")
     public ResponseEntity<ApiResponse<AuthorDetailResponse>> createAuthor(@Valid @RequestBody AuthorRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.<AuthorDetailResponse>builder()
                 .message("Tạo mới tác giả thành công")
@@ -67,7 +67,7 @@ public class AuthorController {
 
     @PatchMapping("/admin/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Cập nhật thông tin tác giả", description = "Yêu cầu quyền ADMIN")
+    @Operation(summary = "Cập nhật thông tin tác giả", description = "Có thể gửi thông tin ảnh Cloudinary mới trong portrait. Yêu cầu quyền ADMIN")
     public ResponseEntity<ApiResponse<AuthorDetailResponse>> updateAuthor(
             @PathVariable UUID id,
             @Valid @RequestBody AuthorRequest request) {
@@ -75,6 +75,16 @@ public class AuthorController {
         return ResponseEntity.ok(ApiResponse.<AuthorDetailResponse>builder()
                 .message("Cập nhật tác giả thành công")
                 .result(authorService.updateAuthor(id, request))
+                .build());
+    }
+
+    @DeleteMapping("/admin/{id}/portrait")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Xóa ảnh chân dung tác giả", description = "Yêu cầu quyền ADMIN")
+    public ResponseEntity<ApiResponse<AuthorDetailResponse>> deletePortrait(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.<AuthorDetailResponse>builder()
+                .message("Xóa ảnh chân dung tác giả thành công")
+                .result(authorService.deletePortrait(id))
                 .build());
     }
 

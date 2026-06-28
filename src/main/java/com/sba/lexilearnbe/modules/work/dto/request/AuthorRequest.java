@@ -1,11 +1,12 @@
 package com.sba.lexilearnbe.modules.work.dto.request;
 
+import com.sba.lexilearnbe.shared.infrastructure.storage.UploadedImageRequest;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.*;
-import org.hibernate.validator.constraints.URL;
 
 @Getter
 @Setter
@@ -32,7 +33,6 @@ public class AuthorRequest {
     @Size(max = 2000, message = "Tiểu sử quá dài, vui lòng rút gọn dưới 2000 ký tự")
     private String bio;
 
-    @Size(max = 500, message = "Đường dẫn ảnh quá dài")
-    @URL(message = "Đường dẫn ảnh chân dung không đúng định dạng URL")
-    private String portraitUrl;
+    @Valid
+    private UploadedImageRequest portrait;
 }

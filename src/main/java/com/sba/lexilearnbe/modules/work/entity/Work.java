@@ -50,6 +50,9 @@ public class Work extends BaseEntity {
     @Column(name = "cover_url", length = 500)
     private String coverUrl;
 
+    @Column(name = "cover_public_id", length = 500)
+    private String coverPublicId;
+
     @Builder.Default
     @Column(name = "is_published", nullable = false)
     private Boolean isPublished = false;

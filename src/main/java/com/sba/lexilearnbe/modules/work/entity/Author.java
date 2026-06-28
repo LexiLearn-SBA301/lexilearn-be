@@ -37,4 +37,7 @@ public class Author extends BaseEntity {
 
     @Column(name = "portrait_url", length = 500)
     private String portraitUrl;
+
+    @Column(name = "portrait_public_id", length = 500)
+    private String portraitPublicId;
 }

@@ -16,5 +16,6 @@ public interface WorkService {
 
     WorkDetailResponse updateWork(UUID id, WorkRequest request);
 
+    WorkDetailResponse deleteCover(UUID id);
     void deleteWork(UUID id);
 }

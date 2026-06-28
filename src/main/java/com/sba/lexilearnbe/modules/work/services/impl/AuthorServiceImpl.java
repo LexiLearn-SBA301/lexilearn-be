@@ -11,12 +11,17 @@ import com.sba.lexilearnbe.modules.work.services.AuthorService;
 import com.sba.lexilearnbe.modules.work.utils.SlugUtils;
 import com.sba.lexilearnbe.shared.common.exception.ApiException;
 import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
+import com.sba.lexilearnbe.shared.infrastructure.storage.ImageStorageService;
+import com.sba.lexilearnbe.shared.infrastructure.storage.ImageStorageTransactionManager;
+import com.sba.lexilearnbe.shared.infrastructure.storage.ImageUploadTarget;
+import com.sba.lexilearnbe.shared.infrastructure.storage.StoredImage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.UUID;
 import org.springframework.util.StringUtils;
 
@@ -27,6 +32,8 @@ public class AuthorServiceImpl implements AuthorService {
     private final AuthorRepository authorRepository;
     private final AuthorMapper authorMapper;
     private final WorkRepository workRepository;
+    private final ImageStorageService imageStorageService;
+    private final ImageStorageTransactionManager imageStorageTransactionManager;
 
     @Override
     public Page<AuthorSummaryResponse> getAuthors(String searchKeyword, Pageable pageable) {
@@ -58,6 +65,15 @@ public class AuthorServiceImpl implements AuthorService {
 
         Author author = authorMapper.toEntity(request);
         author.setSlug(slug);
+        if (request.getPortrait() != null) {
+            StoredImage storedImage = imageStorageService.verifyUploadedImage(
+                    request.getPortrait(),
+                    ImageUploadTarget.AUTHOR_PORTRAIT
+            );
+            author.setPortraitUrl(storedImage.url());
+            author.setPortraitPublicId(storedImage.publicId());
+            imageStorageTransactionManager.scheduleCreate(storedImage.publicId());
+        }
 
         try {
             Author savedAuthor = authorRepository.save(author);
@@ -74,10 +90,35 @@ public class AuthorServiceImpl implements AuthorService {
         validateAuthorYears(request.getBirthYear(), request.getDeathYear());
 
         authorMapper.updateEntityFromRequest(request, author);
+        if (request.getPortrait() != null) {
+            String oldPublicId = author.getPortraitPublicId();
+            StoredImage storedImage = imageStorageService.verifyUploadedImage(
+                    request.getPortrait(),
+                    ImageUploadTarget.AUTHOR_PORTRAIT
+            );
+            author.setPortraitUrl(storedImage.url());
+            author.setPortraitPublicId(storedImage.publicId());
+            imageStorageTransactionManager.scheduleReplacement(oldPublicId, storedImage.publicId());
+        }
 
         Author updatedAuthor = authorRepository.save(author);
         return authorMapper.toDetailResponse(updatedAuthor);
     }
+
+    @Override
+    @Transactional
+    public AuthorDetailResponse deletePortrait(UUID id) {
+        Author author = authorRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTHOR_NOT_FOUND));
+
+        String oldPublicId = author.getPortraitPublicId();
+        author.setPortraitUrl(null);
+        author.setPortraitPublicId(null);
+        Author updatedAuthor = authorRepository.save(author);
+        imageStorageTransactionManager.scheduleDeletion(oldPublicId);
+        return authorMapper.toDetailResponse(updatedAuthor);
+    }
+
     @Override
     @Transactional
     public void deleteAuthor(UUID id) {
@@ -87,7 +128,9 @@ public class AuthorServiceImpl implements AuthorService {
             throw new ApiException(ErrorCode.VALIDATION_ERROR,
                     "Không thể xoá tác giả này vì đã có tác phẩm liên kết trên hệ thống");
         }
+        String portraitPublicId = author.getPortraitPublicId();
         authorRepository.delete(author);
+        imageStorageTransactionManager.scheduleDeletion(portraitPublicId);
     }
     private void validateAuthorYears(Integer birthYear, Integer deathYear) {
         int currentYear = java.time.Year.now().getValue(); // Tự động lấy năm hiện tại (2026)

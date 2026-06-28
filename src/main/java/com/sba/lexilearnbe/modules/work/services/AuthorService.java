@@ -13,5 +13,6 @@ public interface AuthorService {
     AuthorDetailResponse getAuthorDetail(String slug);
     AuthorDetailResponse createAuthor(AuthorRequest request);
     AuthorDetailResponse updateAuthor(UUID id, AuthorRequest request);
+    AuthorDetailResponse deletePortrait(UUID id);
     void deleteAuthor(UUID id);
 }

@@ -1,10 +1,11 @@
 package com.sba.lexilearnbe.modules.work.dto.request;
 
+import com.sba.lexilearnbe.shared.infrastructure.storage.UploadedImageRequest;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
-import org.hibernate.validator.constraints.URL;
 
 import java.util.Set;
 import java.util.UUID;
@@ -31,10 +32,6 @@ public class WorkRequest {
 
     private String summary;
 
-    @Size(max = 500, message = "Đường dẫn ảnh bọc sách quá dài")
-    @URL(message = "Đường dẫn ảnh bìa không đúng định dạng URL")
-    private String coverUrl;
-
     @NotNull(message = "Trạng thái xuất bản không được để trống")
     private Boolean isPublished;
 
@@ -55,4 +52,7 @@ public class WorkRequest {
     private String artisticValue;
     private String quoteAttribution;
     private Set<UUID> tagIds;
+
+    @Valid
+    private UploadedImageRequest cover;
 }
