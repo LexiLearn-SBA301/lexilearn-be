@@ -75,6 +75,7 @@ public class AuthServiceImpl implements AuthService {
             }
 
             // Chưa verify → coi như đăng ký lại từ đầu
+            existing.setFullName(request.getFullName().trim());
             existing.setPasswordHash(passwordEncoder.encode(request.getPassword()));
             accountRepository.save(existing);
 
@@ -87,6 +88,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "Role USER chưa được seed trong DB"));
 
         Account account = Account.builder()
+                .fullName(request.getFullName().trim())
                 .email(email)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .status(AccountStatus.UNVERIFIED) // set rõ trong code, không dựa vào DB default
@@ -276,6 +278,7 @@ public class AuthServiceImpl implements AuthService {
 
         return UserResponse.builder()
                 .id(account.getId())
+                .fullName(account.getFullName())
                 .email(account.getEmail())
                 .status(account.getStatus())
                 .roles(roleNames)
