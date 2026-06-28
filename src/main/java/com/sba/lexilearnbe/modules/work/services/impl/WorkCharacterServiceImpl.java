@@ -66,8 +66,10 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
 
     @Override
     @Transactional
-    public WorkCharacterResponse updateCharacter(UUID characterId, UpdateWorkCharacterRequest request) {
+    public WorkCharacterResponse updateCharacter(UUID workId, UUID characterId, UpdateWorkCharacterRequest request) {
+        Objects.requireNonNull(workId, "workId không được để trống");
         WorkCharacter character = requireCharacter(characterId);
+        ensureCharacterBelongsToWork(character, workId);
 
         if (request.getName() != null) {
             character.setName(request.getName().trim());
@@ -87,8 +89,12 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
 
     @Override
     @Transactional
-    public void deleteCharacter(UUID characterId) {
-        workCharacterRepository.delete(requireCharacter(characterId));
+    public void deleteCharacter(UUID workId, UUID characterId) {
+        Objects.requireNonNull(workId, "workId không được để trống");
+        WorkCharacter character = requireCharacter(characterId);
+        ensureCharacterBelongsToWork(character, workId);
+
+        workCharacterRepository.delete(character);
     }
 
     private Work requireWork(UUID workId) {
@@ -112,6 +118,15 @@ public class WorkCharacterServiceImpl implements WorkCharacterService {
                         ErrorCode.RESOURCE_NOT_FOUND,
                         "Nhân vật không tồn tại"
                 ));
+    }
+
+    private void ensureCharacterBelongsToWork(WorkCharacter character, UUID workId) {
+        if (!workId.equals(character.getWork().getId())) {
+            throw new ApiException(
+                    ErrorCode.RESOURCE_NOT_FOUND,
+                    "Nhân vật không tồn tại"
+            );
+        }
     }
 
     private int getNextDisplayOrder(UUID workId) {

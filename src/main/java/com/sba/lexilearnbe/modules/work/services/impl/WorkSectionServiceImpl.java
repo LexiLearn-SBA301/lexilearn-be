@@ -89,11 +89,13 @@ public class WorkSectionServiceImpl implements WorkSectionService {
 
     @Override
     @Transactional
-    public WorkSectionDetailResponse updateSection(UUID sectionId, UpdateWorkSectionRequest request) {
+    public WorkSectionDetailResponse updateSection(UUID workId, UUID sectionId, UpdateWorkSectionRequest request) {
+        Objects.requireNonNull(workId, "workId không được để trống");
         WorkSection section = requireSection(sectionId);
+        ensureSectionBelongsToWork(section, workId);
 
         if (request.getNumber() != null) {
-            validateUniqueNumber(section.getWork().getId(), request.getNumber(), sectionId);
+            validateUniqueNumber(workId, request.getNumber(), sectionId);
             section.setNumber(request.getNumber());
         }
         if (request.getTitle() != null) {
@@ -119,8 +121,12 @@ public class WorkSectionServiceImpl implements WorkSectionService {
 
     @Override
     @Transactional
-    public void deleteSection(UUID sectionId) {
-        workSectionRepository.delete(requireSection(sectionId));
+    public void deleteSection(UUID workId, UUID sectionId) {
+        Objects.requireNonNull(workId, "workId không được để trống");
+        WorkSection section = requireSection(sectionId);
+        ensureSectionBelongsToWork(section, workId);
+
+        workSectionRepository.delete(section);
     }
 
     private Work requireWork(UUID workId) {
@@ -141,6 +147,12 @@ public class WorkSectionServiceImpl implements WorkSectionService {
 
         return workSectionRepository.findByIdWithWork(sectionId)
                 .orElseThrow(() -> new ApiException(ErrorCode.SECTION_NOT_FOUND));
+    }
+
+    private void ensureSectionBelongsToWork(WorkSection section, UUID workId) {
+        if (!workId.equals(section.getWork().getId())) {
+            throw new ApiException(ErrorCode.SECTION_NOT_FOUND);
+        }
     }
 
     private void validateUniqueNumber(UUID workId, Integer number, UUID excludedSectionId) {
