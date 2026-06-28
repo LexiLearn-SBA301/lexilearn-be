@@ -16,6 +16,10 @@ import lombok.Setter;
 @NoArgsConstructor
 public class RegisterRequest {
 
+    @NotBlank(message = "Họ tên không được để trống")
+    @Size(max = 100, message = "Họ tên tối đa 100 ký tự")
+    private String fullName;
+
     @NotBlank(message = "Email không được để trống")
     @Email(message = "Email không hợp lệ")
     @Size(max = 255, message = "Email tối đa 255 ký tự")
