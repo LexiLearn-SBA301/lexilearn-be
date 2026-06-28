@@ -65,8 +65,10 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
 
     @Override
     @Transactional
-    public ArtisticFeatureResponse updateArtisticFeature(UUID featureId, UpdateArtisticFeatureRequest request) {
+    public ArtisticFeatureResponse updateArtisticFeature(UUID workId, UUID featureId, UpdateArtisticFeatureRequest request) {
+        Objects.requireNonNull(workId, "workId không được để trống");
         ArtisticFeature feature = requireFeature(featureId);
+        ensureFeatureBelongsToWork(feature, workId);
 
         if (request.getFeatureType() != null) {
             feature.setFeatureType(request.getFeatureType());
@@ -83,8 +85,12 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
 
     @Override
     @Transactional
-    public void deleteArtisticFeature(UUID featureId) {
-        artisticFeatureRepository.delete(requireFeature(featureId));
+    public void deleteArtisticFeature(UUID workId, UUID featureId) {
+        Objects.requireNonNull(workId, "workId không được để trống");
+        ArtisticFeature feature = requireFeature(featureId);
+        ensureFeatureBelongsToWork(feature, workId);
+
+        artisticFeatureRepository.delete(feature);
     }
 
     private Work requireWork(UUID workId) {
@@ -108,6 +114,15 @@ public class ArtisticFeatureServiceImpl implements ArtisticFeatureService {
                         ErrorCode.RESOURCE_NOT_FOUND,
                         "Đặc điểm nghệ thuật không tồn tại"
                 ));
+    }
+
+    private void ensureFeatureBelongsToWork(ArtisticFeature feature, UUID workId) {
+        if (!workId.equals(feature.getWork().getId())) {
+            throw new ApiException(
+                    ErrorCode.RESOURCE_NOT_FOUND,
+                    "Đặc điểm nghệ thuật không tồn tại"
+            );
+        }
     }
 
     private int getNextDisplayOrder(UUID workId) {

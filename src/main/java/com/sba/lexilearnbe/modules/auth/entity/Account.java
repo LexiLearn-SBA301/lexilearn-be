@@ -23,6 +23,9 @@ import java.util.Set;
 @NoArgsConstructor
 public class Account extends BaseEntity {
 
+    @Column(name = "full_name", nullable = false, length = 100)
+    private String fullName;
+
     @Column(name = "email", nullable = false)
     private String email; // luôn lowercase trước khi lưu (unique index trên LOWER(email))
 

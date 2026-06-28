@@ -16,7 +16,7 @@ public interface WorkSectionService {
 
     WorkSectionDetailResponse createSection(UUID workId, CreateWorkSectionRequest request);
 
-    WorkSectionDetailResponse updateSection(UUID sectionId, UpdateWorkSectionRequest request);
+    WorkSectionDetailResponse updateSection(UUID workId, UUID sectionId, UpdateWorkSectionRequest request);
 
-    void deleteSection(UUID sectionId);
+    void deleteSection(UUID workId, UUID sectionId);
 }

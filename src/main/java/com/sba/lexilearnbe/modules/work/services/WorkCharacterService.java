@@ -13,7 +13,7 @@ public interface WorkCharacterService {
 
     WorkCharacterResponse createCharacter(UUID workId, CreateWorkCharacterRequest request);
 
-    WorkCharacterResponse updateCharacter(UUID characterId, UpdateWorkCharacterRequest request);
+    WorkCharacterResponse updateCharacter(UUID workId, UUID characterId, UpdateWorkCharacterRequest request);
 
-    void deleteCharacter(UUID characterId);
+    void deleteCharacter(UUID workId, UUID characterId);
 }
