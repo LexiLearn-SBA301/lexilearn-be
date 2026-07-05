@@ -51,6 +51,7 @@ public class SecurityConfig {
             "/api/v1/works/{workId}/sections",
             "/api/v1/works/{workId}/characters",
             "/api/v1/works/{workId}/artistic-features",
+            "/api/v1/works/{workId}/commentaries",
     };
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;

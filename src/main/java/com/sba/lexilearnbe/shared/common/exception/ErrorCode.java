@@ -46,6 +46,9 @@ public enum ErrorCode {
     // ── Work Section ────────────────────────────────────────────
     SECTION_NOT_FOUND    ("section_not_found",     HttpStatus.NOT_FOUND, "Phần văn bản không tồn tại"),
 
+    // ── Work Commentary ─────────────────────────────────────────
+    COMMENTARY_NOT_FOUND ("commentary_not_found",  HttpStatus.NOT_FOUND, "Bình phẩm không tồn tại"),
+
     // ── Bookmark ────────────────────────────────────────────────
     BOOKMARK_NOT_FOUND      ("bookmark_not_found",      HttpStatus.NOT_FOUND, "Bookmark không tồn tại"),
     BOOKMARK_ALREADY_EXISTS ("bookmark_already_exists", HttpStatus.CONFLICT,  "Tác phẩm đã được bookmark"),
