@@ -61,6 +61,22 @@ class JwtAuthenticationFilterTest {
                 .containsExactly("ROLE_USER");
     }
 
+    @Test
+    void reviewEndpointSkipsJwtOnlyForPublicGetRequest() {
+        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(
+                jwtService(),
+                new NonBlacklistedTokenService(),
+                new SecurityErrorResponseWriter(new ObjectMapper())
+        );
+        String path = "/api/v1/works/20000000-0000-0000-0000-000000000008/reviews";
+
+        MockHttpServletRequest getRequest = new MockHttpServletRequest("GET", path);
+        MockHttpServletRequest postRequest = new MockHttpServletRequest("POST", path);
+
+        assertThat(filter.shouldNotFilter(getRequest)).isTrue();
+        assertThat(filter.shouldNotFilter(postRequest)).isFalse();
+    }
+
     private JwtService jwtService() {
         JwtService jwtService = new JwtService();
         ReflectionTestUtils.setField(

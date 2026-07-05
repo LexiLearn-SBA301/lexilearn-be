@@ -46,6 +46,16 @@ public enum ErrorCode {
     // ── Work Section ────────────────────────────────────────────
     SECTION_NOT_FOUND    ("section_not_found",     HttpStatus.NOT_FOUND, "Phần văn bản không tồn tại"),
 
+    // ── Work Commentary ─────────────────────────────────────────
+    COMMENTARY_NOT_FOUND ("commentary_not_found",  HttpStatus.NOT_FOUND, "Bình phẩm không tồn tại"),
+
+    // ── Work Review ──────────────────────────────────────────────
+    REVIEW_NOT_FOUND          ("review_not_found",          HttpStatus.NOT_FOUND, "Bình phẩm của độc giả không tồn tại"),
+    REVIEW_ALREADY_EXISTS     ("review_already_exists",     HttpStatus.CONFLICT, "Bạn đã có bình phẩm cho tác phẩm này"),
+    REVIEW_REVISION_NOT_FOUND ("review_revision_not_found", HttpStatus.NOT_FOUND, "Phiên bản bình phẩm không tồn tại"),
+    REVIEW_ALREADY_PENDING    ("review_already_pending",    HttpStatus.CONFLICT, "Bình phẩm đã có phiên bản chờ duyệt"),
+    INVALID_REVIEW_STATUS     ("invalid_review_status",     HttpStatus.CONFLICT, "Trạng thái bình phẩm không hợp lệ"),
+
     // ── Bookmark ────────────────────────────────────────────────
     BOOKMARK_NOT_FOUND      ("bookmark_not_found",      HttpStatus.NOT_FOUND, "Bookmark không tồn tại"),
     BOOKMARK_ALREADY_EXISTS ("bookmark_already_exists", HttpStatus.CONFLICT,  "Tác phẩm đã được bookmark"),
