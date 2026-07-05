@@ -10,10 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,6 +21,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
@@ -41,14 +39,18 @@ public class WorkCommentaryController {
     @Operation(summary = "Lấy danh sách bình phẩm đã xuất bản")
     public ResponseEntity<ApiResponse<Page<WorkCommentaryResponse>>> getPublishedCommentaries(
             @PathVariable UUID workId,
-            @ParameterObject
-            @PageableDefault(size = 10, sort = "displayOrder") Pageable pageable,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "asc") String sortDir,
+            @RequestParam(defaultValue = "displayOrder") String sortBy,
             HttpServletRequest servletRequest) {
         ApiResponse<Page<WorkCommentaryResponse>> response =
                 ApiResponse.<Page<WorkCommentaryResponse>>builder()
                 .code("success")
                 .message("Lấy danh sách bình phẩm thành công")
-                .result(commentaryService.getPublishedCommentaries(workId, pageable))
+                .result(commentaryService.getPublishedCommentaries(
+                        workId, page, size, sortDir, sortBy
+                ))
                 .timestamp(LocalDateTime.now())
                 .path(servletRequest.getRequestURI())
                 .build();
@@ -61,14 +63,18 @@ public class WorkCommentaryController {
     @Operation(summary = "Lấy toàn bộ bình phẩm", description = "Bao gồm cả bản chưa xuất bản")
     public ResponseEntity<ApiResponse<Page<WorkCommentaryResponse>>> getAllCommentaries(
             @PathVariable UUID workId,
-            @ParameterObject
-            @PageableDefault(size = 10, sort = "displayOrder") Pageable pageable,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "asc") String sortDir,
+            @RequestParam(defaultValue = "displayOrder") String sortBy,
             HttpServletRequest servletRequest) {
         ApiResponse<Page<WorkCommentaryResponse>> response =
                 ApiResponse.<Page<WorkCommentaryResponse>>builder()
                 .code("success")
                 .message("Lấy toàn bộ bình phẩm thành công")
-                .result(commentaryService.getAllCommentaries(workId, pageable))
+                .result(commentaryService.getAllCommentaries(
+                        workId, page, size, sortDir, sortBy
+                ))
                 .timestamp(LocalDateTime.now())
                 .path(servletRequest.getRequestURI())
                 .build();

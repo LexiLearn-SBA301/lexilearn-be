@@ -14,7 +14,8 @@ import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.lang.reflect.Proxy;
 import java.util.List;
@@ -174,7 +175,7 @@ class WorkCommentaryServiceImplTest {
                 .isFeatured(false)
                 .isPublished(true)
                 .build();
-        PageRequest pageable = PageRequest.of(1, 2);
+        AtomicReference<Pageable> capturedPageable = new AtomicReference<>();
 
         WorkRepository workRepository = proxy(WorkRepository.class, (method, args) -> {
             if ("findById".equals(method)) {
@@ -185,6 +186,8 @@ class WorkCommentaryServiceImplTest {
         WorkCommentaryRepository commentaryRepository =
                 proxy(WorkCommentaryRepository.class, (method, args) -> {
                     if ("findPublishedByWorkId".equals(method)) {
+                        Pageable pageable = (Pageable) args[1];
+                        capturedPageable.set(pageable);
                         return new PageImpl<>(List.of(commentary), pageable, 5);
                     }
                     throw new UnsupportedOperationException(method);
@@ -195,12 +198,45 @@ class WorkCommentaryServiceImplTest {
                 commentaryMapper
         );
 
-        Page<?> result = service.getPublishedCommentaries(workId, pageable);
+        Page<?> result = service.getPublishedCommentaries(
+                workId, 1, 2, "desc", "createdAt"
+        );
 
         assertEquals(5, result.getTotalElements());
         assertEquals(3, result.getTotalPages());
         assertEquals(1, result.getNumber());
         assertEquals(1, result.getContent().size());
+        assertEquals(2, capturedPageable.get().getPageSize());
+        assertEquals(
+                Sort.Direction.DESC,
+                capturedPageable.get().getSort().getOrderFor("createdAt").getDirection()
+        );
+    }
+
+    @Test
+    void rejectsUnsupportedSortFieldBeforeQueryingDatabase() {
+        WorkRepository workRepository =
+                proxy(WorkRepository.class, (method, args) -> {
+                    throw new UnsupportedOperationException(method);
+                });
+        WorkCommentaryRepository commentaryRepository =
+                proxy(WorkCommentaryRepository.class, (method, args) -> {
+                    throw new UnsupportedOperationException(method);
+                });
+        WorkCommentaryServiceImpl service = new WorkCommentaryServiceImpl(
+                workRepository,
+                commentaryRepository,
+                commentaryMapper
+        );
+
+        ApiException exception = assertThrows(
+                ApiException.class,
+                () -> service.getPublishedCommentaries(
+                        UUID.randomUUID(), 0, 10, "asc", "unknownField"
+                )
+        );
+
+        assertEquals(ErrorCode.VALIDATION_ERROR, exception.getErrorCode());
     }
 
     @SuppressWarnings("unchecked")

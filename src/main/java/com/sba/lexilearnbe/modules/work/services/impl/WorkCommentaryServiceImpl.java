@@ -15,16 +15,27 @@ import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class WorkCommentaryServiceImpl implements WorkCommentaryService {
+
+    private static final int MAX_PAGE_SIZE = 100;
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+            "displayOrder",
+            "createdAt",
+            "publishedYear",
+            "commentatorName"
+    );
 
     private final WorkRepository workRepository;
     private final WorkCommentaryRepository commentaryRepository;
@@ -32,9 +43,14 @@ public class WorkCommentaryServiceImpl implements WorkCommentaryService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<WorkCommentaryResponse> getPublishedCommentaries(
-            UUID workId,
-            Pageable pageable) {
+    public Page<WorkCommentaryResponse> getPublishedCommentaries(UUID workId, int page, int size, String sortDir, String sortBy) {
+
+        Sort sort = sortDir.equalsIgnoreCase("asc")
+                            ? Sort.by(sortBy).ascending()
+                            : Sort.by(sortBy).descending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
         requireReadableWork(workId);
         return commentaryRepository.findPublishedByWorkId(workId, pageable)
                 .map(commentaryMapper::toResponse);
@@ -42,9 +58,14 @@ public class WorkCommentaryServiceImpl implements WorkCommentaryService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<WorkCommentaryResponse> getAllCommentaries(
-            UUID workId,
-            Pageable pageable) {
+    public Page<WorkCommentaryResponse> getAllCommentaries(UUID workId, int page, int size, String sortDir, String sortBy) {
+
+        Sort sort = sortDir.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
         requireWork(workId);
         return commentaryRepository.findAllByWorkId(workId, pageable)
                 .map(commentaryMapper::toResponse);
@@ -52,9 +73,7 @@ public class WorkCommentaryServiceImpl implements WorkCommentaryService {
 
     @Override
     @Transactional
-    public WorkCommentaryResponse createCommentary(
-            UUID workId,
-            CreateWorkCommentaryRequest request) {
+    public WorkCommentaryResponse createCommentary(UUID workId, CreateWorkCommentaryRequest request) {
         Work work = requireWork(workId);
         WorkCommentary commentary = commentaryMapper.toEntity(request);
         commentary.setWork(work);
@@ -72,10 +91,7 @@ public class WorkCommentaryServiceImpl implements WorkCommentaryService {
 
     @Override
     @Transactional
-    public WorkCommentaryResponse updateCommentary(
-            UUID workId,
-            UUID commentaryId,
-            UpdateWorkCommentaryRequest request) {
+    public WorkCommentaryResponse updateCommentary(UUID workId, UUID commentaryId, UpdateWorkCommentaryRequest request) {
         WorkCommentary commentary = requireCommentary(commentaryId);
         ensureCommentaryBelongsToWork(commentary, workId);
 
