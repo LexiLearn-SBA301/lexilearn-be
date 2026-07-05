@@ -7,8 +7,13 @@ import com.sba.lexilearnbe.modules.work.services.WorkCommentaryService;
 import com.sba.lexilearnbe.shared.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @RestController
@@ -34,23 +39,41 @@ public class WorkCommentaryController {
 
     @GetMapping("/{workId}/commentaries")
     @Operation(summary = "Lấy danh sách bình phẩm đã xuất bản")
-    public ResponseEntity<ApiResponse<List<WorkCommentaryResponse>>> getPublishedCommentaries(
-            @PathVariable UUID workId) {
-        return ResponseEntity.ok(ApiResponse.<List<WorkCommentaryResponse>>builder()
+    public ResponseEntity<ApiResponse<Page<WorkCommentaryResponse>>> getPublishedCommentaries(
+            @PathVariable UUID workId,
+            @ParameterObject
+            @PageableDefault(size = 10, sort = "displayOrder") Pageable pageable,
+            HttpServletRequest servletRequest) {
+        ApiResponse<Page<WorkCommentaryResponse>> response =
+                ApiResponse.<Page<WorkCommentaryResponse>>builder()
+                .code("success")
                 .message("Lấy danh sách bình phẩm thành công")
-                .result(commentaryService.getPublishedCommentaries(workId))
-                .build());
+                .result(commentaryService.getPublishedCommentaries(workId, pageable))
+                .timestamp(LocalDateTime.now())
+                .path(servletRequest.getRequestURI())
+                .build();
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/admin/{workId}/commentaries")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Lấy toàn bộ bình phẩm", description = "Bao gồm cả bản chưa xuất bản")
-    public ResponseEntity<ApiResponse<List<WorkCommentaryResponse>>> getAllCommentaries(
-            @PathVariable UUID workId) {
-        return ResponseEntity.ok(ApiResponse.<List<WorkCommentaryResponse>>builder()
+    public ResponseEntity<ApiResponse<Page<WorkCommentaryResponse>>> getAllCommentaries(
+            @PathVariable UUID workId,
+            @ParameterObject
+            @PageableDefault(size = 10, sort = "displayOrder") Pageable pageable,
+            HttpServletRequest servletRequest) {
+        ApiResponse<Page<WorkCommentaryResponse>> response =
+                ApiResponse.<Page<WorkCommentaryResponse>>builder()
+                .code("success")
                 .message("Lấy toàn bộ bình phẩm thành công")
-                .result(commentaryService.getAllCommentaries(workId))
-                .build());
+                .result(commentaryService.getAllCommentaries(workId, pageable))
+                .timestamp(LocalDateTime.now())
+                .path(servletRequest.getRequestURI())
+                .build();
+
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/admin/{workId}/commentaries")
@@ -58,12 +81,18 @@ public class WorkCommentaryController {
     @Operation(summary = "Tạo bình phẩm")
     public ResponseEntity<ApiResponse<WorkCommentaryResponse>> createCommentary(
             @PathVariable UUID workId,
-            @Valid @RequestBody CreateWorkCommentaryRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.<WorkCommentaryResponse>builder()
-                        .message("Tạo bình phẩm thành công")
-                        .result(commentaryService.createCommentary(workId, request))
-                        .build());
+            @Valid @RequestBody CreateWorkCommentaryRequest request,
+            HttpServletRequest servletRequest) {
+        ApiResponse<WorkCommentaryResponse> response =
+                ApiResponse.<WorkCommentaryResponse>builder()
+                .code("success")
+                .message("Tạo bình phẩm thành công")
+                .result(commentaryService.createCommentary(workId, request))
+                .timestamp(LocalDateTime.now())
+                .path(servletRequest.getRequestURI())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PatchMapping("/admin/{workId}/commentaries/{commentaryId}")
@@ -72,11 +101,18 @@ public class WorkCommentaryController {
     public ResponseEntity<ApiResponse<WorkCommentaryResponse>> updateCommentary(
             @PathVariable UUID workId,
             @PathVariable UUID commentaryId,
-            @Valid @RequestBody UpdateWorkCommentaryRequest request) {
-        return ResponseEntity.ok(ApiResponse.<WorkCommentaryResponse>builder()
+            @Valid @RequestBody UpdateWorkCommentaryRequest request,
+            HttpServletRequest servletRequest) {
+        ApiResponse<WorkCommentaryResponse> response =
+                ApiResponse.<WorkCommentaryResponse>builder()
+                .code("success")
                 .message("Cập nhật bình phẩm thành công")
                 .result(commentaryService.updateCommentary(workId, commentaryId, request))
-                .build());
+                .timestamp(LocalDateTime.now())
+                .path(servletRequest.getRequestURI())
+                .build();
+
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/admin/{workId}/commentaries/{commentaryId}")
@@ -84,8 +120,17 @@ public class WorkCommentaryController {
     @Operation(summary = "Xóa bình phẩm")
     public ResponseEntity<ApiResponse<Void>> deleteCommentary(
             @PathVariable UUID workId,
-            @PathVariable UUID commentaryId) {
+            @PathVariable UUID commentaryId,
+            HttpServletRequest servletRequest) {
         commentaryService.deleteCommentary(workId, commentaryId);
-        return ResponseEntity.noContent().build();
+
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .code("success")
+                .message("Xóa bình phẩm thành công")
+                .timestamp(LocalDateTime.now())
+                .path(servletRequest.getRequestURI())
+                .build();
+
+        return ResponseEntity.ok(response);
     }
 }

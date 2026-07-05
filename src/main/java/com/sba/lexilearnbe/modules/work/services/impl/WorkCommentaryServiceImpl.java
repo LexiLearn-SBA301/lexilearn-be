@@ -14,11 +14,11 @@ import com.sba.lexilearnbe.shared.common.exception.ApiException;
 import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -32,22 +32,22 @@ public class WorkCommentaryServiceImpl implements WorkCommentaryService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<WorkCommentaryResponse> getPublishedCommentaries(UUID workId) {
+    public Page<WorkCommentaryResponse> getPublishedCommentaries(
+            UUID workId,
+            Pageable pageable) {
         requireReadableWork(workId);
-        return commentaryRepository.findPublishedByWorkId(workId)
-                .stream()
-                .map(commentaryMapper::toResponse)
-                .toList();
+        return commentaryRepository.findPublishedByWorkId(workId, pageable)
+                .map(commentaryMapper::toResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<WorkCommentaryResponse> getAllCommentaries(UUID workId) {
+    public Page<WorkCommentaryResponse> getAllCommentaries(
+            UUID workId,
+            Pageable pageable) {
         requireWork(workId);
-        return commentaryRepository.findAllByWorkId(workId)
-                .stream()
-                .map(commentaryMapper::toResponse)
-                .toList();
+        return commentaryRepository.findAllByWorkId(workId, pageable)
+                .map(commentaryMapper::toResponse);
     }
 
     @Override
@@ -56,19 +56,9 @@ public class WorkCommentaryServiceImpl implements WorkCommentaryService {
             UUID workId,
             CreateWorkCommentaryRequest request) {
         Work work = requireWork(workId);
-        WorkCommentary commentary = WorkCommentary.builder()
-                .work(work)
-                .title(trimToNull(request.title()))
-                .content(request.content().trim())
-                .commentatorName(request.commentatorName().trim())
-                .commentatorType(request.commentatorType())
-                .sourceTitle(trimToNull(request.sourceTitle()))
-                .sourceUrl(trimToNull(request.sourceUrl()))
-                .publishedYear(request.publishedYear())
-                .displayOrder(getNextDisplayOrder(workId))
-                .isFeatured(Boolean.TRUE.equals(request.isFeatured()))
-                .isPublished(request.isPublished() == null || request.isPublished())
-                .build();
+        WorkCommentary commentary = commentaryMapper.toEntity(request);
+        commentary.setWork(work);
+        commentary.setDisplayOrder(getNextDisplayOrder(workId));
 
         try {
             return commentaryMapper.toResponse(commentaryRepository.saveAndFlush(commentary));
@@ -89,33 +79,7 @@ public class WorkCommentaryServiceImpl implements WorkCommentaryService {
         WorkCommentary commentary = requireCommentary(commentaryId);
         ensureCommentaryBelongsToWork(commentary, workId);
 
-        if (request.title() != null) {
-            commentary.setTitle(trimToNull(request.title()));
-        }
-        if (request.content() != null) {
-            commentary.setContent(request.content().trim());
-        }
-        if (request.commentatorName() != null) {
-            commentary.setCommentatorName(request.commentatorName().trim());
-        }
-        if (request.commentatorType() != null) {
-            commentary.setCommentatorType(request.commentatorType());
-        }
-        if (request.sourceTitle() != null) {
-            commentary.setSourceTitle(trimToNull(request.sourceTitle()));
-        }
-        if (request.sourceUrl() != null) {
-            commentary.setSourceUrl(trimToNull(request.sourceUrl()));
-        }
-        if (request.publishedYear() != null) {
-            commentary.setPublishedYear(request.publishedYear());
-        }
-        if (request.isFeatured() != null) {
-            commentary.setIsFeatured(request.isFeatured());
-        }
-        if (request.isPublished() != null) {
-            commentary.setIsPublished(request.isPublished());
-        }
+        commentaryMapper.updateEntityFromRequest(request, commentary);
 
         return commentaryMapper.toResponse(commentaryRepository.save(commentary));
     }
@@ -153,9 +117,5 @@ public class WorkCommentaryServiceImpl implements WorkCommentaryService {
 
     private int getNextDisplayOrder(UUID workId) {
         return commentaryRepository.findMaxDisplayOrderByWorkId(workId) + 1;
-    }
-
-    private String trimToNull(String value) {
-        return StringUtils.hasText(value) ? value.trim() : null;
     }
 }

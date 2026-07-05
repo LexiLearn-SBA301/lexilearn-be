@@ -2,7 +2,6 @@ package com.sba.lexilearnbe.modules.work.services.impl;
 
 import com.sba.lexilearnbe.modules.work.dto.request.CreateWorkCommentaryRequest;
 import com.sba.lexilearnbe.modules.work.dto.request.UpdateWorkCommentaryRequest;
-import com.sba.lexilearnbe.modules.work.dto.response.WorkCommentaryResponse;
 import com.sba.lexilearnbe.modules.work.entity.Work;
 import com.sba.lexilearnbe.modules.work.entity.WorkCommentary;
 import com.sba.lexilearnbe.modules.work.enums.CommentatorType;
@@ -12,18 +11,27 @@ import com.sba.lexilearnbe.modules.work.repository.WorkRepository;
 import com.sba.lexilearnbe.shared.common.exception.ApiException;
 import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.lang.reflect.Proxy;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class WorkCommentaryServiceImplTest {
+
+    private final WorkCommentaryMapper commentaryMapper =
+            Mappers.getMapper(WorkCommentaryMapper.class);
 
     @Test
     void createCommentaryAssignsNextOrderAndDefaults() {
@@ -53,7 +61,7 @@ class WorkCommentaryServiceImplTest {
         WorkCommentaryServiceImpl service = new WorkCommentaryServiceImpl(
                 workRepository,
                 commentaryRepository,
-                this::toResponse
+                commentaryMapper
         );
 
         service.createCommentary(
@@ -105,7 +113,7 @@ class WorkCommentaryServiceImplTest {
         WorkCommentaryServiceImpl service = new WorkCommentaryServiceImpl(
                 workRepository,
                 commentaryRepository,
-                this::toResponse
+                commentaryMapper
         );
 
         ApiException exception = assertThrows(
@@ -122,23 +130,77 @@ class WorkCommentaryServiceImplTest {
         assertEquals(ErrorCode.COMMENTARY_NOT_FOUND, exception.getErrorCode());
     }
 
-    private WorkCommentaryResponse toResponse(WorkCommentary commentary) {
-        return new WorkCommentaryResponse(
-                commentary.getId(),
-                commentary.getWork().getId(),
-                commentary.getTitle(),
-                commentary.getContent(),
-                commentary.getCommentatorName(),
-                commentary.getCommentatorType(),
-                commentary.getSourceTitle(),
-                commentary.getSourceUrl(),
-                commentary.getPublishedYear(),
-                commentary.getDisplayOrder(),
-                commentary.getIsFeatured(),
-                commentary.getIsPublished(),
-                commentary.getCreatedAt(),
-                commentary.getUpdatedAt()
+    @Test
+    void mapperUpdatesOnceWhileIgnoringNullValues() {
+        WorkCommentary commentary = WorkCommentary.builder()
+                .title("Tiêu đề cũ")
+                .content("Nội dung cũ")
+                .commentatorName("Người cũ")
+                .isPublished(true)
+                .build();
+
+        commentaryMapper.updateEntityFromRequest(
+                new UpdateWorkCommentaryRequest(
+                        "   ",
+                        null,
+                        "  Hoài Thanh  ",
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        false
+                ),
+                commentary
         );
+
+        assertNull(commentary.getTitle());
+        assertEquals("Nội dung cũ", commentary.getContent());
+        assertEquals("Hoài Thanh", commentary.getCommentatorName());
+        assertFalse(commentary.getIsPublished());
+    }
+
+    @Test
+    void publishedCommentariesKeepPageMetadata() {
+        UUID workId = UUID.randomUUID();
+        Work work = Work.builder().id(workId).isPublished(true).build();
+        WorkCommentary commentary = WorkCommentary.builder()
+                .id(UUID.randomUUID())
+                .work(work)
+                .content("Nội dung")
+                .commentatorName("Hoài Thanh")
+                .commentatorType(CommentatorType.CRITIC)
+                .displayOrder(0)
+                .isFeatured(false)
+                .isPublished(true)
+                .build();
+        PageRequest pageable = PageRequest.of(1, 2);
+
+        WorkRepository workRepository = proxy(WorkRepository.class, (method, args) -> {
+            if ("findById".equals(method)) {
+                return Optional.of(work);
+            }
+            throw new UnsupportedOperationException(method);
+        });
+        WorkCommentaryRepository commentaryRepository =
+                proxy(WorkCommentaryRepository.class, (method, args) -> {
+                    if ("findPublishedByWorkId".equals(method)) {
+                        return new PageImpl<>(List.of(commentary), pageable, 5);
+                    }
+                    throw new UnsupportedOperationException(method);
+                });
+        WorkCommentaryServiceImpl service = new WorkCommentaryServiceImpl(
+                workRepository,
+                commentaryRepository,
+                commentaryMapper
+        );
+
+        Page<?> result = service.getPublishedCommentaries(workId, pageable);
+
+        assertEquals(5, result.getTotalElements());
+        assertEquals(3, result.getTotalPages());
+        assertEquals(1, result.getNumber());
+        assertEquals(1, result.getContent().size());
     }
 
     @SuppressWarnings("unchecked")
