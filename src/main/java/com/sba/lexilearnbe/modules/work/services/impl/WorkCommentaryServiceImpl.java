@@ -44,13 +44,7 @@ public class WorkCommentaryServiceImpl implements WorkCommentaryService {
     @Override
     @Transactional(readOnly = true)
     public Page<WorkCommentaryResponse> getPublishedCommentaries(UUID workId, int page, int size, String sortDir, String sortBy) {
-
-        Sort sort = sortDir.equalsIgnoreCase("asc")
-                            ? Sort.by(sortBy).ascending()
-                            : Sort.by(sortBy).descending();
-
-        Pageable pageable = PageRequest.of(page, size, sort);
-
+        Pageable pageable = createPageable(page, size, sortDir, sortBy);
         requireReadableWork(workId);
         return commentaryRepository.findPublishedByWorkId(workId, pageable)
                 .map(commentaryMapper::toResponse);
@@ -59,13 +53,7 @@ public class WorkCommentaryServiceImpl implements WorkCommentaryService {
     @Override
     @Transactional(readOnly = true)
     public Page<WorkCommentaryResponse> getAllCommentaries(UUID workId, int page, int size, String sortDir, String sortBy) {
-
-        Sort sort = sortDir.equalsIgnoreCase("asc")
-                ? Sort.by(sortBy).ascending()
-                : Sort.by(sortBy).descending();
-
-        Pageable pageable = PageRequest.of(page, size, sort);
-
+        Pageable pageable = createPageable(page, size, sortDir, sortBy);
         requireWork(workId);
         return commentaryRepository.findAllByWorkId(workId, pageable)
                 .map(commentaryMapper::toResponse);
@@ -133,5 +121,37 @@ public class WorkCommentaryServiceImpl implements WorkCommentaryService {
 
     private int getNextDisplayOrder(UUID workId) {
         return commentaryRepository.findMaxDisplayOrderByWorkId(workId) + 1;
+    }
+
+    private Pageable createPageable(
+            int page,
+            int size,
+            String sortDir,
+            String sortBy) {
+        if (page < 0 || size < 1 || size > MAX_PAGE_SIZE) {
+            throw new ApiException(
+                    ErrorCode.VALIDATION_ERROR,
+                    "Tham số phân trang không hợp lệ"
+            );
+        }
+        if (!ALLOWED_SORT_FIELDS.contains(sortBy)) {
+            throw new ApiException(
+                    ErrorCode.VALIDATION_ERROR,
+                    "Trường sắp xếp không hợp lệ"
+            );
+        }
+
+        Sort.Direction direction;
+        if ("asc".equalsIgnoreCase(sortDir)) {
+            direction = Sort.Direction.ASC;
+        } else if ("desc".equalsIgnoreCase(sortDir)) {
+            direction = Sort.Direction.DESC;
+        } else {
+            throw new ApiException(
+                    ErrorCode.VALIDATION_ERROR,
+                    "Chiều sắp xếp chỉ nhận asc hoặc desc"
+            );
+        }
+        return PageRequest.of(page, size, Sort.by(direction, sortBy));
     }
 }

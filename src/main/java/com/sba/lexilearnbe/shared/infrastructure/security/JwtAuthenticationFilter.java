@@ -47,8 +47,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return Arrays.stream(SecurityConfig.PUBLIC_ENDPOINTS)
+        boolean publicEndpoint = Arrays.stream(SecurityConfig.PUBLIC_ENDPOINTS)
                 .anyMatch(pattern -> PATH_MATCHER.match(pattern, request.getRequestURI()));
+        boolean publicGetEndpoint = "GET".equalsIgnoreCase(request.getMethod())
+                && Arrays.stream(SecurityConfig.PUBLIC_GET_ENDPOINTS)
+                .anyMatch(pattern -> PATH_MATCHER.match(
+                        pattern,
+                        request.getRequestURI()
+                ));
+        return publicEndpoint || publicGetEndpoint;
     }
 
     @Override
