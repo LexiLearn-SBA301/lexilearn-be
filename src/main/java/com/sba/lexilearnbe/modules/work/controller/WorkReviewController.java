@@ -46,9 +46,7 @@ public class WorkReviewController {
                 ApiResponse.<Page<PublicWorkReviewResponse>>builder()
                         .code("success")
                         .message("Lấy danh sách bình phẩm của độc giả thành công")
-                        .result(reviewService.getPublishedReviews(
-                                workId, page, size, sortDir, sortBy
-                        ))
+                        .result(reviewService.getPublishedReviews(workId, page, size, sortDir, sortBy))
                         .timestamp(LocalDateTime.now())
                         .path(servletRequest.getRequestURI())
                         .build();

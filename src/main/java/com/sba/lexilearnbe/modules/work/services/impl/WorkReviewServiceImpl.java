@@ -338,15 +338,13 @@ public class WorkReviewServiceImpl implements WorkReviewService {
         return loadStates(List.of(review)).getOrDefault(review.getId(), new ReviewState());
     }
 
-    private MyWorkReviewResponse toMyResponse(
-            WorkReview review,
-            ReviewState state) {
+    private MyWorkReviewResponse toMyResponse(WorkReview review, ReviewState state) {
+
         ReviewState safeState = state == null ? new ReviewState() : state;
-        return reviewMapper.toMyResponse(
-                review,
-                toRevisionResponse(safeState.get(ReviewRevisionStatus.APPROVED)),
-                toRevisionResponse(safeState.get(ReviewRevisionStatus.PENDING)),
-                toRevisionResponse(safeState.get(ReviewRevisionStatus.REJECTED))
+        return reviewMapper.toMyResponse(review,
+                                        toRevisionResponse(safeState.get(ReviewRevisionStatus.APPROVED)),
+                                        toRevisionResponse(safeState.get(ReviewRevisionStatus.PENDING)),
+                                        toRevisionResponse(safeState.get(ReviewRevisionStatus.REJECTED))
         );
     }
 
@@ -376,42 +374,28 @@ public class WorkReviewServiceImpl implements WorkReviewService {
                 ));
     }
 
-    private Pageable createPageable(
-            int page,
-            int size,
-            String sortDir,
-            String sortBy,
-            Map<String, String> allowedSortFields) {
+    private Pageable createPageable(int page, int size, String sortDir, String sortBy, Map<String, String> allowedSortFields) {
+
         if (page < 0) {
-            throw new ApiException(
-                    ErrorCode.VALIDATION_ERROR,
-                    "Số trang không được nhỏ hơn 0"
-            );
+            throw new ApiException(ErrorCode.VALIDATION_ERROR, "Số trang không được nhỏ hơn 0");
         }
         if (size < 1 || size > MAX_PAGE_SIZE) {
-            throw new ApiException(
-                    ErrorCode.VALIDATION_ERROR,
-                    "Kích thước trang phải từ 1 đến 100"
-            );
+            throw new ApiException(ErrorCode.VALIDATION_ERROR, "Kích thước trang phải từ 1 đến 100");
         }
         String property = allowedSortFields.get(sortBy);
         if (property == null) {
-            throw new ApiException(
-                    ErrorCode.VALIDATION_ERROR,
-                    "Trường sắp xếp không hợp lệ"
-            );
+            throw new ApiException(ErrorCode.VALIDATION_ERROR, "Trường sắp xếp không hợp lệ");
         }
 
         Sort.Direction direction;
         if ("asc".equalsIgnoreCase(sortDir)) {
             direction = Sort.Direction.ASC;
-        } else if ("desc".equalsIgnoreCase(sortDir)) {
+        }
+        else if ("desc".equalsIgnoreCase(sortDir)) {
             direction = Sort.Direction.DESC;
-        } else {
-            throw new ApiException(
-                    ErrorCode.VALIDATION_ERROR,
-                    "Chiều sắp xếp chỉ nhận asc hoặc desc"
-            );
+        }
+        else {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR, "Chiều sắp xếp chỉ nhận asc hoặc desc");
         }
         return PageRequest.of(page, size, Sort.by(direction, property));
     }
