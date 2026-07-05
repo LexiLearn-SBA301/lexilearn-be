@@ -9,29 +9,13 @@ import java.util.UUID;
 
 public interface WorkCommentaryService {
 
-    Page<WorkCommentaryResponse> getPublishedCommentaries(
-            UUID workId,
-            int page,
-            int size,
-            String sortDir,
-            String sortBy
-    );
+    Page<WorkCommentaryResponse> getPublishedCommentaries(UUID workId, int page, int size, String sortDir, String sortBy);
 
-    Page<WorkCommentaryResponse> getAllCommentaries(
-            UUID workId,
-            int page,
-            int size,
-            String sortDir,
-            String sortBy
-    );
+    Page<WorkCommentaryResponse> getAllCommentaries(UUID workId, int page, int size, String sortDir, String sortBy);
 
     WorkCommentaryResponse createCommentary(UUID workId, CreateWorkCommentaryRequest request);
 
-    WorkCommentaryResponse updateCommentary(
-            UUID workId,
-            UUID commentaryId,
-            UpdateWorkCommentaryRequest request
-    );
+    WorkCommentaryResponse updateCommentary(UUID workId, UUID commentaryId, UpdateWorkCommentaryRequest request);
 
     void deleteCommentary(UUID workId, UUID commentaryId);
 }
