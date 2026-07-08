@@ -82,6 +82,22 @@ public class WorkController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/{workId}/sections/full")
+    @Operation(summary = "Lấy toàn bộ nội dung các phần văn bản của tác phẩm")
+    public ResponseEntity<ApiResponse<List<WorkSectionDetailResponse>>> getFullSections(
+            @PathVariable UUID workId
+    ) {
+        List<WorkSectionDetailResponse> result = workSectionService.getFullSections(workId);
+
+        ApiResponse<List<WorkSectionDetailResponse>> response =
+                ApiResponse.<List<WorkSectionDetailResponse>>builder()
+                        .message("Lấy toàn bộ nội dung các phần văn bản thành công")
+                        .result(result)
+                        .build();
+
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{workId}/sections/{sectionId}")
     @Operation(summary = "Lấy nội dung một phần văn bản")
     public ResponseEntity<ApiResponse<WorkSectionDetailResponse>> getSection(

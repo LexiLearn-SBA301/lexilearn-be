@@ -12,6 +12,8 @@ public interface WorkSectionService {
 
     List<WorkSectionSummaryResponse> getSections(UUID workId);
 
+    List<WorkSectionDetailResponse> getFullSections(UUID workId);
+
     WorkSectionDetailResponse getSection(UUID workId, UUID sectionId);
 
     WorkSectionDetailResponse createSection(UUID workId, CreateWorkSectionRequest request);

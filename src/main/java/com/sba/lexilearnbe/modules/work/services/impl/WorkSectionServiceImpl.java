@@ -45,6 +45,17 @@ public class WorkSectionServiceImpl implements WorkSectionService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<WorkSectionDetailResponse> getFullSections(UUID workId) {
+        requireReadableWork(workId);
+
+        return workSectionRepository.findAllByWork_IdOrderByNumberAsc(workId)
+                .stream()
+                .map(workSectionMapper::toDetail)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public WorkSectionDetailResponse getSection(UUID workId, UUID sectionId) {
         Objects.requireNonNull(workId, "workId không được để trống");
 
