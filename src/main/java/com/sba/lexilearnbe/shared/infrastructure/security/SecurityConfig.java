@@ -48,6 +48,7 @@ public class SecurityConfig {
             "/api/v1/tags",
             "/api/v1/authors/{slug}",
             "/api/v1/authors",
+            "/api/v1/works/{workId}/sections/full",
             "/api/v1/works/{workId}/sections/{sectionId}",
             "/api/v1/works/{workId}/sections",
             "/api/v1/works/{workId}/characters",
