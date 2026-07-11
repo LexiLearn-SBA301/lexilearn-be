@@ -36,9 +36,10 @@ public class AuthorServiceImpl implements AuthorService {
     private final ImageStorageTransactionManager imageStorageTransactionManager;
 
     @Override
-    public Page<AuthorSummaryResponse> getAuthors(String searchKeyword, Pageable pageable) {
+    public Page<AuthorSummaryResponse> getAuthors(String searchKeyword, String period, Pageable pageable) {
         String safeSearch = StringUtils.hasText(searchKeyword) ? searchKeyword.trim() : "";
-        return authorRepository.findAuthorsWithFilter(safeSearch, pageable)
+        String safePeriod = StringUtils.hasText(period) ? period.trim() : "";
+        return authorRepository.findAuthorsWithFilter(safeSearch, safePeriod,pageable)
                 .map(authorMapper::toSummaryResponse);
     }
 
