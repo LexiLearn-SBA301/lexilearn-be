@@ -9,7 +9,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.UUID;
 
 public interface AuthorService {
-    Page<AuthorSummaryResponse> getAuthors(String searchKeyword, Pageable pageable);
+    Page<AuthorSummaryResponse> getAuthors(String searchKeyword, String period, Pageable pageable);
     AuthorDetailResponse getAuthorDetail(String slug);
     AuthorDetailResponse createAuthor(AuthorRequest request);
     AuthorDetailResponse updateAuthor(UUID id, AuthorRequest request);

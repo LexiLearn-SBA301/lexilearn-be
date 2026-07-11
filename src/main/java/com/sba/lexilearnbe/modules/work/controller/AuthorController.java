@@ -33,11 +33,12 @@ public class AuthorController {
     @Operation(summary = "Lấy danh sách Tác giả", description = "Lấy danh sách tất cả tác giả, có hỗ trợ tìm kiếm và phân trang")
     public ResponseEntity<ApiResponse<Page<AuthorSummaryResponse>>> getAuthors(
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String period,
             @ParameterObject @PageableDefault(size = 20, sort = "name") Pageable pageable) {
 
         ApiResponse<Page<AuthorSummaryResponse>> response = ApiResponse.<Page<AuthorSummaryResponse>>builder()
                 .message("Lấy danh sách tác giả thành công")
-                .result(authorService.getAuthors(search, pageable))
+                .result(authorService.getAuthors(search, period, pageable))
                 .build();
 
         return ResponseEntity.ok(response);
