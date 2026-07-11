@@ -47,8 +47,8 @@ spring:
 
 cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME:dod7mmpab}
-  api-key: ${CLOUDINARY_API_KEY:695894873958573}
-  api-secret: ${CLOUDINARY_API_SECRET:kgQplfSVYUWijigrxd4VnoghrYg}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}
 
 app:
   cors:

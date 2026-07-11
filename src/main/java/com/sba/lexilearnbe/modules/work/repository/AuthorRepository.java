@@ -14,6 +14,7 @@ import java.util.UUID;
 @Repository
 public interface AuthorRepository extends JpaRepository<Author, UUID> {
     Optional<Author> findBySlug(String slug);
+
     @Query("SELECT a FROM Author a WHERE " +
             "(:search = '' OR a.name ILIKE CONCAT('%', :search, '%') OR a.penName ILIKE CONCAT('%', :search, '%')) " +
             "AND (:period = '' OR a.period = :period)")
