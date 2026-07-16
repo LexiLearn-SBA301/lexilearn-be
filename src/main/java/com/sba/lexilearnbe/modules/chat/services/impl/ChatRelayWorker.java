@@ -2,6 +2,7 @@ package com.sba.lexilearnbe.modules.chat.services.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sba.lexilearnbe.modules.chat.client.AiChatClient;
+import com.sba.lexilearnbe.modules.chat.client.StreamSession;
 import com.sba.lexilearnbe.modules.chat.dto.request.SendMessageRequest;
 import com.sba.lexilearnbe.modules.chat.entity.ChatMessage;
 import com.sba.lexilearnbe.modules.chat.entity.Conversation;
@@ -39,18 +40,26 @@ public class ChatRelayWorker {
     private final ConversationRepository conversationRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final AiChatClient aiChatClient;
+    private final ChatStreamRegistry streamRegistry;
     private final ObjectMapper objectMapper;
 
     @Async
     public void relay(UUID accountId, SendMessageRequest request, SseEmitter emitter) {
+        Conversation conversation = null;
+        StreamSession session = new StreamSession();
         try {
-            Conversation conversation = conversationWriter.resolveOrCreate(
+            conversation = conversationWriter.resolveOrCreate(
                     accountId, request.conversationId(), request.message());
+            // Đăng ký session TRƯỚC khi báo conversationId cho FE -> lúc FE có id để gọi /stop thì
+            // session chắc chắn đã nằm trong registry (không lọt cửa sổ chưa-đăng-ký).
+            streamRegistry.register(conversation.getId(), session);
+
             // Event đầu tiên: báo FE conversationId THỰC (có thể vừa tạo mới) để FE lưu & chat tiếp.
             sendEvent(emitter, Map.of(
                     "type", "conversation",
                     "conversationId", conversation.getId().toString()));
 
+            // human_message: LUÔN lưu (trước khi gọi AI) -> /stop vẫn giữ lại câu người dùng hỏi.
             conversationWriter.saveMessage(conversation, MessageRole.USER, request.message());
 
             // Đảm bảo AI có lịch sử: nguội (mới / hết TTL) thì seed lại từ DB.
@@ -62,25 +71,37 @@ public class ChatRelayWorker {
                 try {
                     emitter.send(SseEmitter.event().data(raw));   // chuyền tay realtime xuống FE
                 } catch (IOException io) {
-                    throw new UncheckedIOException(io);           // FE đóng kết nối -> dừng relay
+                    throw new UncheckedIOException(io);           // FE rớt -> AiChatClient bắt, đọc nốt
                 }
-            });
+            }, session);
 
-            if (answer != null && !answer.isBlank()) {
+            // /stop chủ động -> KHÔNG lưu ai_message (human_message đã lưu ở trên). Chạy xong hoặc FE
+            // chỉ rớt tạm thời (không gọi /stop) -> LUÔN lưu final message.
+            if (!session.isCancelled() && answer != null && !answer.isBlank()) {
                 conversationWriter.saveMessage(conversation, MessageRole.ASSISTANT, answer);
                 conversationRepository.touchUpdatedAt(conversation.getId(), LocalDateTime.now());
             }
             emitter.complete();
         } catch (Exception e) {
-            log.warn("Relay chat lỗi account={}: {}", accountId, e.toString());
-            try {
-                sendEvent(emitter, Map.of(
-                        "type", "error",
-                        "content", "Có lỗi khi xử lý câu hỏi. Vui lòng thử lại."));
-            } catch (Exception ignore) {
-                // FE đã ngắt -> khỏi báo
+            if (session.isCancelled()) {
+                // /stop đóng kết nối BE↔AI -> read bung lỗi. Huỷ chủ động, không phải sự cố.
+                log.info("Stream dừng theo yêu cầu account={} conv={}", accountId,
+                        conversation != null ? conversation.getId() : null);
+            } else {
+                log.warn("Relay chat lỗi account={}: {}", accountId, e.toString());
+                try {
+                    sendEvent(emitter, Map.of(
+                            "type", "error",
+                            "content", "Có lỗi khi xử lý câu hỏi. Vui lòng thử lại."));
+                } catch (Exception ignore) {
+                    // FE đã ngắt -> khỏi báo
+                }
             }
             emitter.complete();
+        } finally {
+            if (conversation != null) {
+                streamRegistry.unregister(conversation.getId(), session);
+            }
         }
     }
 

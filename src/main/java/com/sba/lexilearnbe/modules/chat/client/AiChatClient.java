@@ -9,19 +9,20 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 /**
  * Client gọi AI service (rag-service). BE là bên DUY NHẤT gọi AI (FE không đụng) -> auth
@@ -84,10 +85,16 @@ public class AiChatClient {
     }
 
     /**
-     * Stream câu trả lời từ AI. Forward MỖI event (JSON 1 dòng) qua onEvent để BE relay xuống
-     * FE realtime; song song bắt event type=done để lấy câu trả lời cuối lưu DB. Trả answer cuối.
+     * Stream câu trả lời từ AI (SSE). Trả answer cuối (từ event type=done) để relay lưu DB.
+     *
+     * Hai điểm CHỦ ĐÍCH:
+     *  1) Parse `done.answer` TRƯỚC khi forward xuống FE -> chốt được câu trả lời KHÔNG phụ thuộc
+     *     việc gửi FE có lỗi hay không. FE rớt tạm thời (onEvent ném) -> ngừng forward nhưng VẪN đọc
+     *     hết stream để relay lưu được bài đã sinh (không mất bài đã tốn compute).
+     *  2) Dùng ofInputStream + giữ InputStream trong `session` -> /stop có thể ĐÓNG kết nối BE↔AI
+     *     (huỷ Ollama). Khi bị đóng do /stop, readLine bung IOException -> trả "" (không lưu).
      */
-    public String stream(UUID threadId, String message, Consumer<String> onEvent)
+    public String stream(UUID threadId, String message, Consumer<String> onEvent, StreamSession session)
             throws IOException, InterruptedException {
         String body = objectMapper.writeValueAsString(Map.of(
                 "thread_id", threadId.toString(),
@@ -98,31 +105,55 @@ public class AiChatClient {
                 .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
                 .build();
 
-        HttpResponse<Stream<String>> resp = http.send(req, HttpResponse.BodyHandlers.ofLines());
+        HttpResponse<InputStream> resp = http.send(req, HttpResponse.BodyHandlers.ofInputStream());
         if (resp.statusCode() >= 400) {
+            resp.body().close();
             throw new IOException("AI /chat/stream HTTP " + resp.statusCode());
         }
 
+        InputStream is = resp.body();
+        session.attach(is);
+        // is là là kiểu InputStream nhưng có thể gắn vào hàm attach nhận kiểu Closeable
+        // -> vì theo quy tắc kế thừa class InputStream implements Closeable
+        // -> Hàm đối tượng cha -> đối tượng con kế thừa -> có thể truyền kiểu cha vào kiểu con - ( ngược lại lỗi)
+
         String answer = "";
-        Iterator<String> it = resp.body().iterator();     // đọc lazy -> forward gần realtime
-        while (it.hasNext()) {
-            String line = it.next();
-            if (!line.startsWith("data:")) {
-                continue;
-            }
-            String json = line.substring(5).trim();
-            if (json.isEmpty()) {
-                continue;
-            }
-            onEvent.accept(json);                          // chuyền tay xuống FE
-            try {
-                JsonNode node = objectMapper.readTree(json);
-                if ("done".equals(node.path("type").asText())) {
-                    answer = node.path("payload").path("answer").asText("");
+        boolean clientGone = false;   // FE rớt -> ngừng forward nhưng vẫn đọc nốt để chốt answer
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (!line.startsWith("data:")) {
+                    continue;
                 }
-            } catch (Exception ignore) {
-                // dòng không parse được -> đã forward, bỏ qua để không vỡ stream
+                String json = line.substring(5).trim();
+                if (json.isEmpty()) {
+                    continue;
+                }
+                // (1) Parse TRƯỚC khi forward -> answer cuối không phụ thuộc việc gửi FE.
+                try {
+                    JsonNode node = objectMapper.readTree(json);
+                    if ("done".equals(node.path("type").asText())) {
+                        answer = node.path("payload").path("answer").asText("");
+                    }
+                } catch (Exception ignore) {
+                    // dòng không parse được -> bỏ qua, vẫn forward bên dưới
+                }
+                // Forward best-effort: FE rớt -> set cờ, ngừng gửi nhưng tiếp tục đọc để lưu được.
+                if (!clientGone) {
+                    try {
+                        onEvent.accept(json);
+                    } catch (RuntimeException e) {
+                        clientGone = true;
+                        log.warn("FE rớt giữa stream thread={} -> đọc nốt để lưu final message.", threadId);
+                    }
+                }
             }
+        } catch (IOException e) {
+            // (2) /stop đóng kết nối -> readLine bung IOException. Đó là huỷ CHỦ ĐỘNG, không phải lỗi.
+            if (session.isCancelled()) {
+                return "";   // không có answer để lưu -> relay bỏ qua ai_message
+            }
+            throw e;         // lỗi đọc thật -> để relay xử lý (báo error xuống FE)
         }
         return answer;
     }

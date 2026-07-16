@@ -29,8 +29,11 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ChatServiceImpl implements ChatService {
 
-    // Timeout của kết nối SSE (ms). Bài phân tích sâu có thể chạy khá lâu -> để rộng.
-    private static final long SSE_TIMEOUT_MS = 5 * 60 * 1000L;
+    // Timeout của kết nối SSE (ms). Đây là HẠN CHÓT CỨNG cho cả request, KHÔNG phải idle timeout
+    // -> gửi heartbeat cũng không gia hạn được; chạm mốc là Spring complete emitter, FE thấy
+    // "network error" dù AI vẫn đang chạy. Đo thật: lượt viết luận deep ~6 phút (debate + retry +
+    // Gemini 429) -> mốc 5 phút cũ bị vượt. Để 20 phút cho dư; user muốn dừng sớm thì đã có /stop.
+    private static final long SSE_TIMEOUT_MS = 20 * 60 * 1000L;
 
     private final ConversationRepository conversationRepository;
     private final ChatMessageRepository chatMessageRepository;
@@ -38,6 +41,7 @@ public class ChatServiceImpl implements ChatService {
     private final ChatRelayWorker relayWorker;
     private final ConversationWriter conversationWriter;
     private final AiChatClient aiChatClient;
+    private final ChatStreamRegistry streamRegistry;
 
     @Override
     @Transactional(readOnly = true)
@@ -107,5 +111,14 @@ public class ChatServiceImpl implements ChatService {
 
         return new SendSyncMessageResponse(
                 conversation.getId(), ai.answer(), request.model().name(), ai.sources());
+    }
+
+    @Override
+    public void stopStream(UUID accountId, UUID conversationId) {
+        // Chỉ cho dừng luồng của CHÍNH mình (chống dừng chéo user). Không thuộc user / không có
+        // luồng đang chạy -> im lặng (idempotent, /stop gọi lại nhiều lần vẫn OK).
+        if (conversationRepository.findByIdAndAccountId(conversationId, accountId).isPresent()) {
+            streamRegistry.stop(conversationId);
+        }
     }
 }

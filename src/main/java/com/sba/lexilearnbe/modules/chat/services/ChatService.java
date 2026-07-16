@@ -26,4 +26,7 @@ public interface ChatService {
 
     /** Gửi tin nhắn tới model đơn (only-llm/base-llm) -> trả JSON đồng bộ, chỉ lưu transcript. */
     SendSyncMessageResponse sendMessageSync(UUID accountId, SendSyncMessageRequest request);
+
+    /** Dừng luồng stream đang chạy của 1 đoạn: huỷ AI + đóng kết nối, KHÔNG lưu câu trả lời. */
+    void stopStream(UUID accountId, UUID conversationId);
 }

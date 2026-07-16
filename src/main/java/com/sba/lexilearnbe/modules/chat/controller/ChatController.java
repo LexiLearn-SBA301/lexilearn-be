@@ -101,6 +101,23 @@ public class ChatController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/conversations/{conversationId}/stop")
+    @Operation(summary = "Dừng luồng stream đang chạy: huỷ AI + đóng kết nối, KHÔNG lưu câu trả lời")
+    public ResponseEntity<ApiResponse<Void>> stopStream(
+            @AuthenticationPrincipal UUID accountId,
+            @PathVariable UUID conversationId,
+            HttpServletRequest servletRequest
+    ) {
+        chatService.stopStream(accountId, conversationId);
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .code("success")
+                .message("Đã dừng")
+                .timestamp(LocalDateTime.now())
+                .path(servletRequest.getRequestURI())
+                .build();
+        return ResponseEntity.ok(response);
+    }
+
     @DeleteMapping("/conversations/{conversationId}")
     @Operation(summary = "Xóa 1 đoạn hội thoại")
     public ResponseEntity<ApiResponse<Void>> deleteConversation(
