@@ -1,0 +1,67 @@
+services:
+  lexilearn_db:
+    image: postgres:16
+    container_name: lexilearn_db
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-root}
+      POSTGRES_DB: ${DB_NAME:-lexilearn}
+    ports:
+      - "5432:5432"
+    volumes:
+      - lexilearn_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-lexilearn}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  lexilearn_redis:
+    image: redis:7-alpine
+    container_name: lexilearn_redis
+    ports:
+      - "6369:6369"
+    volumes:
+      - lexilearn_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  lexilearn_be:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lexilearn_be
+    ports:
+      - "8080:8080"
+    environment:
+      # --- Database (trỏ vào service postgres trong cùng network) ---
+      DB_URL: jdbc:postgresql://lexilearn_db:5432/${DB_NAME:-lexilearn}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+      # --- Redis ---
+      REDIS_HOST: lexilearn_redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      # --- Mail (gửi OTP) ---
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      # --- JWT ---
+      JWT_SECRET: ${JWT_SECRET}
+      # --- Cloudinary ---
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      # --- AI / RAG service (RAG chạy trên host -> dùng host.docker.internal, KHÔNG dùng localhost) ---
+      AI_BASE_URL: ${AI_BASE_URL:-http://host.docker.internal:8000}
+    depends_on:
+      lexilearn_db:
+        condition: service_healthy
+      lexilearn_redis:
+        condition: service_healthy
+
+volumes:
+  lexilearn_data:
+  lexilearn_redis_data:

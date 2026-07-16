@@ -10,7 +10,7 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/lexilearn}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:12345}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -36,8 +36,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME:thuunhat@gmail.com}
-    password: ${MAIL_PASSWORD:xoeg mjlb gxbv kcdu}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -46,9 +46,9 @@ spring:
             enable: true
 
 cloudinary:
-  cloud-name: ${CLOUDINARY_CLOUD_NAME:}
-  api-key: ${CLOUDINARY_API_KEY:}
-  api-secret: ${CLOUDINARY_API_SECRET:}
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}
 
 app:
   cors:
@@ -62,6 +62,10 @@ app:
     max-verify-attempts: 5  # chống brute-force OTP
 
   jwt:
-    # HS256 yêu cầu secret >= 32 bytes, production phải set qua biến môi trường JWT_SECRET
-    secret: ${JWT_SECRET:lexilearn-dev-secret-key-change-me-in-production-2026}
+    # HS256 yêu cầu secret >= 32 bytes, set qua biến môi trường JWT_SECRET (xem .env / .env.example)
+    secret: ${JWT_SECRET}
     access-token-ttl: 1800  # access token sống 30 phút (giây)
+
+  ai:
+    # AI service (rag-service, Python/FastAPI) chạy ở host riêng. BE gọi nội bộ để chat/seed/exists.
+    base-url: ${AI_BASE_URL:http://localhost:8000}

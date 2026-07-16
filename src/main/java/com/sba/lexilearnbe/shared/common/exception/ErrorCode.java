@@ -64,7 +64,8 @@ public enum ErrorCode {
     NOTE_NOT_FOUND       ("note_not_found",        HttpStatus.NOT_FOUND, "Ghi chú không tồn tại"),
 
     // ── Chat ────────────────────────────────────────────────────
-    CHAT_SESSION_NOT_FOUND ("chat_session_not_found", HttpStatus.NOT_FOUND, "Phiên chat không tồn tại"),
+    CHAT_SESSION_NOT_FOUND ("chat_session_not_found", HttpStatus.NOT_FOUND,   "Phiên chat không tồn tại"),
+    CHAT_AI_UNAVAILABLE    ("chat_ai_unavailable",    HttpStatus.BAD_GATEWAY, "Không kết nối được dịch vụ AI"),
 
     // ── Storage ─────────────────────────────────────────────────
     FAIL_TO_UPLOAD            ("fail_to_upload",           HttpStatus.BAD_REQUEST, "Không thể tải lên file"),
