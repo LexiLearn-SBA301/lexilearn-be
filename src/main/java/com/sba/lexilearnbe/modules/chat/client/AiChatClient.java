@@ -1,7 +1,9 @@
 package com.sba.lexilearnbe.modules.chat.client;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sba.lexilearnbe.modules.chat.enums.ChatModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -123,5 +125,35 @@ public class AiChatClient {
             }
         }
         return answer;
+    }
+
+    /**
+     * Gọi model đơn (only-llm / base-llm) ĐỒNG BỘ, không stream, không dùng thread_id/checkpoint.
+     * Chỉ gửi message (không gửi history) -> AI trả lời một-lượt. Dùng cho luồng lưu-lịch-sử
+     * không nhớ ngữ cảnh. Trả về câu trả lời + sources (sources để FE hiển thị, BE không lưu).
+     */
+    public AiAnswer query(ChatModel model, String message) throws IOException, InterruptedException {
+        String body = objectMapper.writeValueAsString(Map.of("message", message));
+        HttpRequest req = HttpRequest.newBuilder(URI.create(baseUrl + model.aiPath()))
+                .timeout(Duration.ofSeconds(120))     // RAG + LLM có thể lâu
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
+                .build();
+
+        HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        if (resp.statusCode() >= 400) {
+            throw new IOException("AI " + model.aiPath() + " HTTP " + resp.statusCode());
+        }
+
+        JsonNode node = objectMapper.readTree(resp.body());
+        String answer = node.path("answer").asText("");
+        List<Object> sources = node.path("sources").isArray()
+                ? objectMapper.convertValue(node.get("sources"), new TypeReference<List<Object>>() {})
+                : List.of();
+        return new AiAnswer(answer, sources);
+    }
+
+    /** Kết quả 1 lượt gọi model đơn. */
+    public record AiAnswer(String answer, List<Object> sources) {
     }
 }

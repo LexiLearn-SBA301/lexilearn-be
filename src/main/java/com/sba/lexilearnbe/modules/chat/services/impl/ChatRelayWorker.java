@@ -1,7 +1,6 @@
 package com.sba.lexilearnbe.modules.chat.services.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sba.lexilearnbe.modules.auth.repository.AccountRepository;
 import com.sba.lexilearnbe.modules.chat.client.AiChatClient;
 import com.sba.lexilearnbe.modules.chat.dto.request.SendMessageRequest;
 import com.sba.lexilearnbe.modules.chat.entity.ChatMessage;
@@ -22,7 +21,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -36,9 +34,8 @@ import java.util.UUID;
 public class ChatRelayWorker {
 
     private static final Logger log = LoggerFactory.getLogger(ChatRelayWorker.class);
-    private static final int TITLE_MAX = 60;
 
-    private final AccountRepository accountRepository;
+    private final ConversationWriter conversationWriter;
     private final ConversationRepository conversationRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final AiChatClient aiChatClient;
@@ -47,13 +44,14 @@ public class ChatRelayWorker {
     @Async
     public void relay(UUID accountId, SendMessageRequest request, SseEmitter emitter) {
         try {
-            Conversation conversation = resolveOrCreate(accountId, request);
+            Conversation conversation = conversationWriter.resolveOrCreate(
+                    accountId, request.conversationId(), request.message());
             // Event đầu tiên: báo FE conversationId THỰC (có thể vừa tạo mới) để FE lưu & chat tiếp.
             sendEvent(emitter, Map.of(
                     "type", "conversation",
                     "conversationId", conversation.getId().toString()));
 
-            saveMessage(conversation, MessageRole.USER, request.message());
+            conversationWriter.saveMessage(conversation, MessageRole.USER, request.message());
 
             // Đảm bảo AI có lịch sử: nguội (mới / hết TTL) thì seed lại từ DB.
             if (!aiChatClient.threadExists(conversation.getId())) {
@@ -69,7 +67,7 @@ public class ChatRelayWorker {
             });
 
             if (answer != null && !answer.isBlank()) {
-                saveMessage(conversation, MessageRole.ASSISTANT, answer);
+                conversationWriter.saveMessage(conversation, MessageRole.ASSISTANT, answer);
                 conversationRepository.touchUpdatedAt(conversation.getId(), LocalDateTime.now());
             }
             emitter.complete();
@@ -99,35 +97,6 @@ public class ChatRelayWorker {
             history.add(Map.of("role", m.getRole().toAiRole(), "content", m.getContent()));
         }
         return history;
-    }
-
-    private Conversation resolveOrCreate(UUID accountId, SendMessageRequest request) {
-        if (request.conversationId() != null) {
-            Optional<Conversation> existing =
-                    conversationRepository.findByIdAndAccountId(request.conversationId(), accountId);
-            if (existing.isPresent()) {
-                return existing.get();
-            }
-            // id gửi lên không thuộc user / đã hết -> tạo đoạn mới (lazy-create).
-        }
-        Conversation created = Conversation.builder()
-                .account(accountRepository.getReferenceById(accountId))   // proxy, không load full account
-                .title(buildTitle(request.message()))
-                .build();
-        return conversationRepository.save(created);
-    }
-
-    private void saveMessage(Conversation conversation, MessageRole role, String content) {
-        chatMessageRepository.save(ChatMessage.builder()
-                .conversation(conversation)
-                .role(role)
-                .content(content)
-                .build());
-    }
-
-    private String buildTitle(String message) {
-        String trimmed = message.strip();
-        return trimmed.length() <= TITLE_MAX ? trimmed : trimmed.substring(0, TITLE_MAX) + "…";
     }
 
     private void sendEvent(SseEmitter emitter, Map<String, String> payload) throws IOException {

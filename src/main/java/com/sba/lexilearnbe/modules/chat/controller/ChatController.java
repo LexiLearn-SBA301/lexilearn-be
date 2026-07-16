@@ -1,8 +1,10 @@
 package com.sba.lexilearnbe.modules.chat.controller;
 
 import com.sba.lexilearnbe.modules.chat.dto.request.SendMessageRequest;
+import com.sba.lexilearnbe.modules.chat.dto.request.SendSyncMessageRequest;
 import com.sba.lexilearnbe.modules.chat.dto.response.ConversationDetailResponse;
 import com.sba.lexilearnbe.modules.chat.dto.response.ConversationSummaryResponse;
+import com.sba.lexilearnbe.modules.chat.dto.response.SendSyncMessageResponse;
 import com.sba.lexilearnbe.modules.chat.services.ChatService;
 import com.sba.lexilearnbe.shared.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -79,6 +81,24 @@ public class ChatController {
     ) {
         // conversationId=null trong body -> BE lazy-create đoạn mới, báo id thực ở event SSE đầu tiên.
         return chatService.streamMessage(accountId, request);
+    }
+
+    @PostMapping("/conversations/messages/sync")
+    @Operation(summary = "Gửi tin nhắn tới model đơn (only-llm/base-llm) — trả JSON, có lưu lịch sử")
+    public ResponseEntity<ApiResponse<SendSyncMessageResponse>> sendMessageSync(
+            @AuthenticationPrincipal UUID accountId,
+            @Valid @RequestBody SendSyncMessageRequest request,
+            HttpServletRequest servletRequest
+    ) {
+        // conversationId=null -> lazy-create đoạn mới; id thực nằm trong result.conversationId.
+        ApiResponse<SendSyncMessageResponse> response = ApiResponse.<SendSyncMessageResponse>builder()
+                .code("success")
+                .message("Gửi tin nhắn thành công")
+                .result(chatService.sendMessageSync(accountId, request))
+                .timestamp(LocalDateTime.now())
+                .path(servletRequest.getRequestURI())
+                .build();
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/conversations/{conversationId}")

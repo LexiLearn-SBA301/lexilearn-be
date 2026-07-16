@@ -1,8 +1,10 @@
 package com.sba.lexilearnbe.modules.chat.services;
 
 import com.sba.lexilearnbe.modules.chat.dto.request.SendMessageRequest;
+import com.sba.lexilearnbe.modules.chat.dto.request.SendSyncMessageRequest;
 import com.sba.lexilearnbe.modules.chat.dto.response.ConversationDetailResponse;
 import com.sba.lexilearnbe.modules.chat.dto.response.ConversationSummaryResponse;
+import com.sba.lexilearnbe.modules.chat.dto.response.SendSyncMessageResponse;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
@@ -21,4 +23,7 @@ public interface ChatService {
 
     /** Gửi tin nhắn -> relay stream từ AI về FE qua SSE (chạy nền). */
     SseEmitter streamMessage(UUID accountId, SendMessageRequest request);
+
+    /** Gửi tin nhắn tới model đơn (only-llm/base-llm) -> trả JSON đồng bộ, chỉ lưu transcript. */
+    SendSyncMessageResponse sendMessageSync(UUID accountId, SendSyncMessageRequest request);
 }
