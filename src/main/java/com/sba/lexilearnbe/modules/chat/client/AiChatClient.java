@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sba.lexilearnbe.modules.chat.enums.ChatModel;
+import com.sba.lexilearnbe.shared.common.exception.ApiException;
+import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,6 +21,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -156,6 +159,74 @@ public class AiChatClient {
             throw e;         // lỗi đọc thật -> để relay xử lý (báo error xuống FE)
         }
         return answer;
+    }
+
+    //Báo AI: người học muốn tranh luận cùng hội đồng ở lượt ĐANG run
+    public void debateOptin(UUID threadId) {
+        try {
+            String body = objectMapper.writeValueAsString(Map.of("thread_id", threadId.toString()));
+            HttpRequest req = HttpRequest.newBuilder(URI.create(baseUrl + "/chat/debate/optin"))
+                    .timeout(Duration.ofSeconds(5))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
+                    .build();
+            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            if (resp.statusCode() >= 400) {
+                log.warn("AI /chat/debate/optin trả {}: {}", resp.statusCode(), resp.body());
+            }
+        } catch (Exception e) {
+            log.warn("AI /chat/debate/optin lỗi: {}", e.getMessage());
+        }
+    }
+
+    public void debateReply(UUID threadId, String message, String targetArgId, String stance) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("thread_id", threadId.toString());
+        // HashMap (không phải Map.of) vì 3 field dưới được phép null: Map.of ném NPE với null,
+        // mà "message=null" chính là tín hiệu Bỏ qua/Kết thúc — không thể bỏ field đi.
+        body.put("message", message);
+        body.put("target_arg_id", targetArgId);
+        body.put("stance", stance);
+
+        HttpResponse<String> resp;
+        try {
+            HttpRequest req = HttpRequest.newBuilder(URI.create(baseUrl + "/chat/debate/reply"))
+                    .timeout(Duration.ofSeconds(10))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(
+                            objectMapper.writeValueAsString(body), StandardCharsets.UTF_8))
+                    .build();
+            resp = http.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        } catch (InterruptedException e) { //isInterrupted() == false
+            // JVM tự gán isInterrupted cho mình xử lý -> nếu không gán lại thì logic phía trên vẫn chạy tiếp
+            Thread.currentThread().interrupt();
+            // gán lại isInterrupted() == true -> các hàm CÓ KHAI BÁO throws InterruptedException
+            // (sleep/take/http.send...) sẽ nổ ngay. Còn readLine()/JDBC thì KHÔNG quan tâm cờ này
+            throw new ApiException(ErrorCode.CHAT_AI_UNAVAILABLE); // throw vẫn chạy được vì chỉ đơn giản là ném chứ không block io
+        } catch (IOException e) {
+            throw new ApiException(ErrorCode.CHAT_AI_UNAVAILABLE);
+        }
+
+        if (resp.statusCode() == 409) {
+            throw new ApiException(ErrorCode.DEBATE_NOT_WAITING);
+        }
+        if (resp.statusCode() == 400) {
+            throw new ApiException(ErrorCode.DEBATE_INVALID_REPLY, readDetail(resp.body()));
+        }
+        if (resp.statusCode() >= 400) {
+            log.warn("AI /chat/debate/reply trả {}: {}", resp.statusCode(), resp.body());
+            throw new ApiException(ErrorCode.CHAT_AI_UNAVAILABLE);
+        }
+    }
+
+    /** Bóc {"detail": "..."} của FastAPI; không parse được thì trả null (dùng message mặc định). */
+    private String readDetail(String body) {
+        try {
+            String detail = objectMapper.readTree(body).path("detail").asText("");
+            return detail.isBlank() ? null : detail;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**

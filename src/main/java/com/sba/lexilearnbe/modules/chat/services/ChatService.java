@@ -1,5 +1,6 @@
 package com.sba.lexilearnbe.modules.chat.services;
 
+import com.sba.lexilearnbe.modules.chat.dto.request.DebateReplyRequest;
 import com.sba.lexilearnbe.modules.chat.dto.request.SendMessageRequest;
 import com.sba.lexilearnbe.modules.chat.dto.request.SendSyncMessageRequest;
 import com.sba.lexilearnbe.modules.chat.dto.response.ConversationDetailResponse;
@@ -29,4 +30,10 @@ public interface ChatService {
 
     /** Dừng luồng stream đang chạy của 1 đoạn: huỷ AI + đóng kết nối, KHÔNG lưu câu trả lời. */
     void stopStream(UUID accountId, UUID conversationId);
+
+    /** Người học xin tham gia tranh luận cùng hội đồng ở lượt đang chạy. */
+    void debateOptin(UUID accountId, UUID conversationId);
+
+    /** Chuyển 1 lượt phát biểu của người học xuống hội đồng đang chờ. */
+    void debateReply(UUID accountId, UUID conversationId, DebateReplyRequest request);
 }
