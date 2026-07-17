@@ -1,6 +1,7 @@
 package com.sba.lexilearnbe.modules.chat.services.impl;
 
 import com.sba.lexilearnbe.modules.chat.client.AiChatClient;
+import com.sba.lexilearnbe.modules.chat.dto.request.DebateReplyRequest;
 import com.sba.lexilearnbe.modules.chat.dto.request.SendMessageRequest;
 import com.sba.lexilearnbe.modules.chat.dto.request.SendSyncMessageRequest;
 import com.sba.lexilearnbe.modules.chat.dto.response.ChatMessageResponse;
@@ -120,5 +121,25 @@ public class ChatServiceImpl implements ChatService {
         if (conversationRepository.findByIdAndAccountId(conversationId, accountId).isPresent()) {
             streamRegistry.stop(conversationId);
         }
+    }
+
+    @Override
+    public void debateOptin(UUID accountId, UUID conversationId) {
+        requireOwned(accountId, conversationId);
+        aiChatClient.debateOptin(conversationId);
+    }
+
+    @Override
+    public void debateReply(UUID accountId, UUID conversationId, DebateReplyRequest request) {
+        requireOwned(accountId, conversationId);
+        // Fire-and-forget xuống AI: KHÔNG đụng SseEmitter, không mở transaction. Không lưu Db
+        aiChatClient.debateReply(conversationId, request.message(),
+                request.targetArgId(), request.stance());
+    }
+
+    //auth
+    private void requireOwned(UUID accountId, UUID conversationId) {
+        conversationRepository.findByIdAndAccountId(conversationId, accountId)
+                .orElseThrow(() -> new ApiException(ErrorCode.CHAT_SESSION_NOT_FOUND));
     }
 }

@@ -1,5 +1,6 @@
 package com.sba.lexilearnbe.modules.chat.controller;
 
+import com.sba.lexilearnbe.modules.chat.dto.request.DebateReplyRequest;
 import com.sba.lexilearnbe.modules.chat.dto.request.SendMessageRequest;
 import com.sba.lexilearnbe.modules.chat.dto.request.SendSyncMessageRequest;
 import com.sba.lexilearnbe.modules.chat.dto.response.ConversationDetailResponse;
@@ -112,6 +113,42 @@ public class ChatController {
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .code("success")
                 .message("Đã dừng")
+                .timestamp(LocalDateTime.now())
+                .path(servletRequest.getRequestURI())
+                .build();
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/conversations/{conversationId}/debate/optin")
+    @Operation(summary = "Xin tranh luận cùng hội đồng AI ở lượt đang chạy (bấm trước khi tới node debate)")
+    public ResponseEntity<ApiResponse<Void>> debateOptin(
+            @AuthenticationPrincipal UUID accountId,
+            @PathVariable UUID conversationId,
+            HttpServletRequest servletRequest
+    ) {
+        chatService.debateOptin(accountId, conversationId);
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .code("success")
+                .message("Đã ghi nhận — bạn sẽ được mời phát biểu khi hội đồng tranh luận")
+                .timestamp(LocalDateTime.now())
+                .path(servletRequest.getRequestURI())
+                .build();
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/conversations/{conversationId}/debate/reply")
+    @Operation(summary = "Gửi 1 lượt phát biểu khi hội đồng đang chờ; message rỗng = bỏ qua/kết thúc")
+    public ResponseEntity<ApiResponse<Void>> debateReply(
+            @AuthenticationPrincipal UUID accountId,
+            @PathVariable UUID conversationId,
+            @Valid @RequestBody DebateReplyRequest request,
+            HttpServletRequest servletRequest
+    ) {
+        // Không trả nội dung: phản hồi của hội đồng chảy về qua SSE đang mở, không qua đây.
+        chatService.debateReply(accountId, conversationId, request);
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .code("success")
+                .message("Đã gửi tới hội đồng")
                 .timestamp(LocalDateTime.now())
                 .path(servletRequest.getRequestURI())
                 .build();

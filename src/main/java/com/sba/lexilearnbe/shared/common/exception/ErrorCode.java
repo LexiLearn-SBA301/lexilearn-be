@@ -66,6 +66,8 @@ public enum ErrorCode {
     // ── Chat ────────────────────────────────────────────────────
     CHAT_SESSION_NOT_FOUND ("chat_session_not_found", HttpStatus.NOT_FOUND,   "Phiên chat không tồn tại"),
     CHAT_AI_UNAVAILABLE    ("chat_ai_unavailable",    HttpStatus.BAD_GATEWAY, "Không kết nối được dịch vụ AI"),
+    DEBATE_NOT_WAITING     ("debate_not_waiting",     HttpStatus.CONFLICT,    "Phiên tranh luận đã khép lại"),
+    DEBATE_INVALID_REPLY   ("debate_invalid_reply",   HttpStatus.BAD_REQUEST, "Nội dung phản biện không hợp lệ"),
 
     // ── Storage ─────────────────────────────────────────────────
     FAIL_TO_UPLOAD            ("fail_to_upload",           HttpStatus.BAD_REQUEST, "Không thể tải lên file"),
