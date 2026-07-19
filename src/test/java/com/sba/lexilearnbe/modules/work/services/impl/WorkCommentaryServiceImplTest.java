@@ -12,6 +12,7 @@ import com.sba.lexilearnbe.shared.common.exception.ApiException;
 import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -62,7 +63,8 @@ class WorkCommentaryServiceImplTest {
         WorkCommentaryServiceImpl service = new WorkCommentaryServiceImpl(
                 workRepository,
                 commentaryRepository,
-                commentaryMapper
+                commentaryMapper,
+                noOpEventPublisher()
         );
 
         service.createCommentary(
@@ -114,7 +116,8 @@ class WorkCommentaryServiceImplTest {
         WorkCommentaryServiceImpl service = new WorkCommentaryServiceImpl(
                 workRepository,
                 commentaryRepository,
-                commentaryMapper
+                commentaryMapper,
+                noOpEventPublisher()
         );
 
         ApiException exception = assertThrows(
@@ -195,7 +198,8 @@ class WorkCommentaryServiceImplTest {
         WorkCommentaryServiceImpl service = new WorkCommentaryServiceImpl(
                 workRepository,
                 commentaryRepository,
-                commentaryMapper
+                commentaryMapper,
+                noOpEventPublisher()
         );
 
         Page<?> result = service.getPublishedCommentaries(
@@ -226,7 +230,8 @@ class WorkCommentaryServiceImplTest {
         WorkCommentaryServiceImpl service = new WorkCommentaryServiceImpl(
                 workRepository,
                 commentaryRepository,
-                commentaryMapper
+                commentaryMapper,
+                noOpEventPublisher()
         );
 
         ApiException exception = assertThrows(
@@ -246,6 +251,11 @@ class WorkCommentaryServiceImplTest {
                 new Class<?>[]{type},
                 (proxy, method, args) -> invocation.invoke(method.getName(), args)
         );
+    }
+
+    private ApplicationEventPublisher noOpEventPublisher() {
+        return event -> {
+        };
     }
 
     @FunctionalInterface
