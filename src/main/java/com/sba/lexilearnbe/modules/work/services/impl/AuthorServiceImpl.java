@@ -4,6 +4,7 @@ import com.sba.lexilearnbe.modules.work.dto.request.AuthorRequest;
 import com.sba.lexilearnbe.modules.work.dto.response.AuthorDetailResponse;
 import com.sba.lexilearnbe.modules.work.dto.response.AuthorSummaryResponse;
 import com.sba.lexilearnbe.modules.work.entity.Author;
+import com.sba.lexilearnbe.modules.work.event.WorkSyncRequestedEvent;
 import com.sba.lexilearnbe.modules.work.mapper.AuthorMapper;
 import com.sba.lexilearnbe.modules.work.repository.AuthorRepository;
 import com.sba.lexilearnbe.modules.work.repository.WorkRepository;
@@ -16,6 +17,7 @@ import com.sba.lexilearnbe.shared.infrastructure.storage.ImageStorageTransaction
 import com.sba.lexilearnbe.shared.infrastructure.storage.ImageUploadTarget;
 import com.sba.lexilearnbe.shared.infrastructure.storage.StoredImage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +36,7 @@ public class AuthorServiceImpl implements AuthorService {
     private final WorkRepository workRepository;
     private final ImageStorageService imageStorageService;
     private final ImageStorageTransactionManager imageStorageTransactionManager;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public Page<AuthorSummaryResponse> getAuthors(String searchKeyword, String period, Pageable pageable) {
@@ -103,6 +106,7 @@ public class AuthorServiceImpl implements AuthorService {
         }
 
         Author updatedAuthor = authorRepository.save(author);
+        publishAuthorWorksUpsertSync(updatedAuthor.getId());
         return authorMapper.toDetailResponse(updatedAuthor);
     }
 
@@ -117,6 +121,7 @@ public class AuthorServiceImpl implements AuthorService {
         author.setPortraitPublicId(null);
         Author updatedAuthor = authorRepository.save(author);
         imageStorageTransactionManager.scheduleDeletion(oldPublicId);
+        publishAuthorWorksUpsertSync(updatedAuthor.getId());
         return authorMapper.toDetailResponse(updatedAuthor);
     }
 
@@ -147,5 +152,10 @@ public class AuthorServiceImpl implements AuthorService {
         if (birthYear != null && deathYear != null && deathYear < birthYear) {
             throw new ApiException(ErrorCode.VALIDATION_ERROR, "Năm mất không được nhỏ hơn năm sinh");
         }
+    }
+
+    private void publishAuthorWorksUpsertSync(UUID authorId) {
+        workRepository.findIdsByAuthorId(authorId)
+                .forEach(workId -> eventPublisher.publishEvent(WorkSyncRequestedEvent.upsert(workId)));
     }
 }

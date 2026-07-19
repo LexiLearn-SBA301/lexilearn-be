@@ -6,6 +6,7 @@ import com.sba.lexilearnbe.modules.work.dto.response.WorkSummaryResponse;
 import com.sba.lexilearnbe.modules.work.entity.Author;
 import com.sba.lexilearnbe.modules.work.entity.Tag;
 import com.sba.lexilearnbe.modules.work.entity.Work;
+import com.sba.lexilearnbe.modules.work.event.WorkSyncRequestedEvent;
 import com.sba.lexilearnbe.modules.work.mapper.WorkMapper;
 import com.sba.lexilearnbe.modules.work.repository.AuthorRepository;
 import com.sba.lexilearnbe.modules.work.repository.TagRepository;
@@ -20,6 +21,7 @@ import com.sba.lexilearnbe.shared.infrastructure.storage.ImageStorageTransaction
 import com.sba.lexilearnbe.shared.infrastructure.storage.ImageUploadTarget;
 import com.sba.lexilearnbe.shared.infrastructure.storage.StoredImage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -44,6 +46,7 @@ public class WorkServiceImpl implements WorkService {
     private final TagRepository tagRepository;
     private final ImageStorageService imageStorageService;
     private final ImageStorageTransactionManager imageStorageTransactionManager;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public Page<WorkSummaryResponse> getWorksByFilter(String genre, String period, String searchKeyword, String tag, Pageable pageable) {
@@ -117,6 +120,7 @@ public class WorkServiceImpl implements WorkService {
 
         try {
             Work savedWork = workRepository.save(work);
+            publishWorkUpsertSync(savedWork.getId());
             return workMapper.toDetailResponse(savedWork);
         } catch (DataIntegrityViolationException e) {
             throw new ApiException(ErrorCode.WORK_ALREADY_EXISTS);
@@ -151,6 +155,7 @@ public class WorkServiceImpl implements WorkService {
             imageStorageTransactionManager.scheduleReplacement(oldPublicId, storedImage.publicId());
         }
         Work updatedWork = workRepository.save(work);
+        publishWorkUpsertSync(updatedWork.getId());
         return workMapper.toDetailResponse(updatedWork);
     }
 
@@ -165,6 +170,7 @@ public class WorkServiceImpl implements WorkService {
         work.setCoverPublicId(null);
         Work updatedWork = workRepository.save(work);
         imageStorageTransactionManager.scheduleDeletion(oldPublicId);
+        publishWorkUpsertSync(updatedWork.getId());
         return workMapper.toDetailResponse(updatedWork);
     }
 
@@ -174,9 +180,15 @@ public class WorkServiceImpl implements WorkService {
         Work work = workRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.WORK_NOT_FOUND));
         String coverPublicId = work.getCoverPublicId();
+        String workSlug = work.getSlug();
         workSectionRepository.deleteByWorkId(id);
         workRepository.delete(work);
         imageStorageTransactionManager.scheduleDeletion(coverPublicId);
+        eventPublisher.publishEvent(WorkSyncRequestedEvent.delete(workSlug));
+    }
+
+    private void publishWorkUpsertSync(UUID workId) {
+        eventPublisher.publishEvent(WorkSyncRequestedEvent.upsert(workId));
     }
 
 }

@@ -5,6 +5,7 @@ import com.sba.lexilearnbe.modules.work.dto.request.UpdateWorkCommentaryRequest;
 import com.sba.lexilearnbe.modules.work.dto.response.WorkCommentaryResponse;
 import com.sba.lexilearnbe.modules.work.entity.Work;
 import com.sba.lexilearnbe.modules.work.entity.WorkCommentary;
+import com.sba.lexilearnbe.modules.work.event.WorkSyncRequestedEvent;
 import com.sba.lexilearnbe.modules.work.mapper.WorkCommentaryMapper;
 import com.sba.lexilearnbe.modules.work.repository.WorkCommentaryRepository;
 import com.sba.lexilearnbe.modules.work.repository.WorkRepository;
@@ -13,6 +14,7 @@ import com.sba.lexilearnbe.modules.work.utils.WorkReadAccessValidator;
 import com.sba.lexilearnbe.shared.common.exception.ApiException;
 import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -40,6 +42,7 @@ public class WorkCommentaryServiceImpl implements WorkCommentaryService {
     private final WorkRepository workRepository;
     private final WorkCommentaryRepository commentaryRepository;
     private final WorkCommentaryMapper commentaryMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -68,7 +71,9 @@ public class WorkCommentaryServiceImpl implements WorkCommentaryService {
         commentary.setDisplayOrder(getNextDisplayOrder(workId));
 
         try {
-            return commentaryMapper.toResponse(commentaryRepository.saveAndFlush(commentary));
+            WorkCommentary savedCommentary = commentaryRepository.saveAndFlush(commentary);
+            publishWorkUpsertSync(workId);
+            return commentaryMapper.toResponse(savedCommentary);
         } catch (DataIntegrityViolationException exception) {
             throw new ApiException(
                     ErrorCode.VALIDATION_ERROR,
@@ -85,7 +90,9 @@ public class WorkCommentaryServiceImpl implements WorkCommentaryService {
 
         commentaryMapper.updateEntityFromRequest(request, commentary);
 
-        return commentaryMapper.toResponse(commentaryRepository.save(commentary));
+        WorkCommentary savedCommentary = commentaryRepository.save(commentary);
+        publishWorkUpsertSync(workId);
+        return commentaryMapper.toResponse(savedCommentary);
     }
 
     @Override
@@ -94,6 +101,7 @@ public class WorkCommentaryServiceImpl implements WorkCommentaryService {
         WorkCommentary commentary = requireCommentary(commentaryId);
         ensureCommentaryBelongsToWork(commentary, workId);
         commentaryRepository.delete(commentary);
+        publishWorkUpsertSync(workId);
     }
 
     private Work requireWork(UUID workId) {
@@ -142,5 +150,9 @@ public class WorkCommentaryServiceImpl implements WorkCommentaryService {
             throw new ApiException(ErrorCode.VALIDATION_ERROR, "Chiều sắp xếp chỉ nhận asc hoặc desc");
         }
         return PageRequest.of(page, size, Sort.by(direction, sortBy));
+    }
+
+    private void publishWorkUpsertSync(UUID workId) {
+        eventPublisher.publishEvent(WorkSyncRequestedEvent.upsert(workId));
     }
 }

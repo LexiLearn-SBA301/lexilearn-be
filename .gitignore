@@ -49,3 +49,6 @@ logs/
 .DS_Store
 
 docs/
+
+**/__pycache__/
+*.pyc

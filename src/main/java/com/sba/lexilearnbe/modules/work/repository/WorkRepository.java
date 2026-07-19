@@ -20,6 +20,11 @@ public interface WorkRepository extends JpaRepository<Work, UUID>, JpaSpecificat
 
     @EntityGraph(attributePaths = {"author", "tags"})
     Optional<Work> findBySlug(String slug);
+
+    @EntityGraph(attributePaths = {"author", "tags"})
+    @Query("SELECT w FROM Work w WHERE w.id = :id")
+    Optional<Work> findByIdWithAuthorAndTags(@Param("id") UUID id);
+
     boolean existsBySlug(String slug);
     @Override
     @EntityGraph(attributePaths = {"author"})
@@ -28,6 +33,10 @@ public interface WorkRepository extends JpaRepository<Work, UUID>, JpaSpecificat
     List<Work> findAllByIdIn(List<UUID> ids);
 
     boolean existsByAuthorId(UUID id);
+
+    @Query("SELECT w.id FROM Work w WHERE w.author.id = :authorId")
+    List<UUID> findIdsByAuthorId(@Param("authorId") UUID authorId);
+
     @EntityGraph(attributePaths = {"author", "tags"})
     @Query("SELECT w FROM Work w WHERE w.slug = :slug AND w.isPublished = true")
     Optional<Work> findPublishedBySlug(@Param("slug") String slug);

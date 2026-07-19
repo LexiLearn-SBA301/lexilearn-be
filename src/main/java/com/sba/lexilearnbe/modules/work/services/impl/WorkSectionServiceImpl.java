@@ -8,6 +8,7 @@ import com.sba.lexilearnbe.modules.work.dto.response.WorkSectionDetailResponse;
 import com.sba.lexilearnbe.modules.work.dto.response.WorkSectionSummaryResponse;
 import com.sba.lexilearnbe.modules.work.entity.WorkSection;
 import com.sba.lexilearnbe.modules.work.enums.WorkSectionContentType;
+import com.sba.lexilearnbe.modules.work.event.WorkSyncRequestedEvent;
 import com.sba.lexilearnbe.modules.work.mapper.WorkSectionMapper;
 import com.sba.lexilearnbe.modules.work.repository.WorkSectionRepository;
 import com.sba.lexilearnbe.modules.work.services.WorkSectionService;
@@ -16,6 +17,7 @@ import com.sba.lexilearnbe.modules.work.utils.WorkReadAccessValidator;
 import com.sba.lexilearnbe.shared.common.exception.ApiException;
 import com.sba.lexilearnbe.shared.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +33,7 @@ public class WorkSectionServiceImpl implements WorkSectionService {
     private final WorkRepository workRepository;
     private final WorkSectionRepository workSectionRepository;
     private final WorkSectionMapper workSectionMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -89,7 +92,9 @@ public class WorkSectionServiceImpl implements WorkSectionService {
                 .build();
 
         try {
-            return workSectionMapper.toDetail(workSectionRepository.saveAndFlush(section));
+            WorkSection savedSection = workSectionRepository.saveAndFlush(section);
+            publishWorkUpsertSync(workId);
+            return workSectionMapper.toDetail(savedSection);
         } catch (DataIntegrityViolationException exception) {
             throw new ApiException(
                     ErrorCode.VALIDATION_ERROR,
@@ -121,7 +126,9 @@ public class WorkSectionServiceImpl implements WorkSectionService {
         }
 
         try {
-            return workSectionMapper.toDetail(workSectionRepository.saveAndFlush(section));
+            WorkSection savedSection = workSectionRepository.saveAndFlush(section);
+            publishWorkUpsertSync(workId);
+            return workSectionMapper.toDetail(savedSection);
         } catch (DataIntegrityViolationException exception) {
             throw new ApiException(
                     ErrorCode.VALIDATION_ERROR,
@@ -138,6 +145,7 @@ public class WorkSectionServiceImpl implements WorkSectionService {
         ensureSectionBelongsToWork(section, workId);
 
         workSectionRepository.delete(section);
+        publishWorkUpsertSync(workId);
     }
 
     private Work requireWork(UUID workId) {
@@ -191,5 +199,9 @@ public class WorkSectionServiceImpl implements WorkSectionService {
             return WorkSectionContentType.POETRY;
         }
         return WorkSectionContentType.PROSE;
+    }
+
+    private void publishWorkUpsertSync(UUID workId) {
+        eventPublisher.publishEvent(WorkSyncRequestedEvent.upsert(workId));
     }
 }
