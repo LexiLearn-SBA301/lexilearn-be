@@ -343,6 +343,7 @@ def validate_chunks(chunks: list[Chunk]) -> list[str]:
     work_identity: dict[str, dict[str, Any]] = {}
     section_identity: dict[tuple[str, str], dict[str, Any]] = {}
     section_order_by_work: dict[tuple[str, int], str] = {}
+    section_slugs_by_work = collect_text_section_slugs_by_work(chunks)
 
     for chunk in chunks:
         label = f"{chunk.source_file} row#{chunk.source_row_number}"
@@ -407,10 +408,12 @@ def validate_chunks(chunks: list[Chunk]) -> list[str]:
 
         if chunk.category == "text_section":
             for field_name in required_text_section:
+                if field_name == "section_order" and can_default_section_order(chunk, section_slugs_by_work):
+                    continue
                 if is_blank(metadata.get(field_name)):
                     errors.append(f"{label}: missing metadata.{field_name} for text_section")
 
-            section_order = chunk.section_order
+            section_order = resolve_section_order(chunk, section_slugs_by_work)
             if section_order is None or section_order <= 0:
                 errors.append(
                     f"{label}: metadata.section_order must be a positive integer, "
@@ -457,6 +460,29 @@ def validate_chunks(chunks: list[Chunk]) -> list[str]:
             errors.append(f"{label}: missing metadata.chunk_category")
 
     return errors
+
+
+def collect_text_section_slugs_by_work(chunks: list[Chunk]) -> dict[str, set[str]]:
+    result: dict[str, set[str]] = defaultdict(set)
+    for chunk in chunks:
+        if chunk.category == "text_section" and chunk.work_slug and chunk.section_slug:
+            result[chunk.work_slug].add(chunk.section_slug)
+    return result
+
+
+def can_default_section_order(chunk: Chunk, section_slugs_by_work: dict[str, set[str]]) -> bool:
+    return (
+        chunk.category == "text_section"
+        and chunk.section_order is None
+        and chunk.work_slug in section_slugs_by_work
+        and len(section_slugs_by_work[chunk.work_slug]) == 1
+    )
+
+
+def resolve_section_order(chunk: Chunk, section_slugs_by_work: dict[str, set[str]]) -> int | None:
+    if can_default_section_order(chunk, section_slugs_by_work):
+        return 1
+    return chunk.section_order
 
 
 def print_validation_errors(errors: list[str]) -> None:
@@ -559,9 +585,10 @@ def build_sections(chunks: list[Chunk], *, min_overlap: int) -> list[Section]:
 
     sections: list[Section] = []
     sortable_groups: list[tuple[int, str, list[Chunk]]] = []
+    section_slugs_by_work = collect_text_section_slugs_by_work(chunks)
     for section_key, group_chunks in section_groups.items():
         group_chunks = sorted(group_chunks, key=lambda c: c.chunk_index)
-        section_order = group_chunks[0].section_order or 0
+        section_order = resolve_section_order(group_chunks[0], section_slugs_by_work) or 0
         sortable_groups.append((section_order, section_key, group_chunks))
 
     for _, section_key, group_chunks in sorted(sortable_groups):
@@ -571,7 +598,7 @@ def build_sections(chunks: list[Chunk], *, min_overlap: int) -> list[Section]:
         )
         content_type = map_content_type([chunk.content_type_raw for chunk in group_chunks])
         section_title = first_non_empty(chunk.section_title for chunk in group_chunks) or humanize_slug(section_key)
-        section_number = group_chunks[0].section_order or len(sections) + 1
+        section_number = resolve_section_order(group_chunks[0], section_slugs_by_work) or len(sections) + 1
         sections.append(
             Section(
                 number=section_number,
