@@ -42,7 +42,10 @@ public class SecurityConfig {
             "/api/v1/auth/logout",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/v3/api-docs/**",
+            "/v3/api-docs/**"
+    };
+
+    public static final String[] PUBLIC_GET_ENDPOINTS = {
             "/api/v1/works/{slug}",
             "/api/v1/works",
             "/api/v1/tags",
@@ -54,9 +57,6 @@ public class SecurityConfig {
             "/api/v1/works/{workId}/characters",
             "/api/v1/works/{workId}/artistic-features",
             "/api/v1/works/{workId}/commentaries",
-    };
-
-    public static final String[] PUBLIC_GET_ENDPOINTS = {
             "/api/v1/works/{workId}/reviews"
     };
 
