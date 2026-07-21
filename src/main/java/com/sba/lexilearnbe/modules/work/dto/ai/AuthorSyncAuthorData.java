@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.UUID;
 
-public record WorkSyncAuthorData(
+public record AuthorSyncAuthorData(
         UUID id,
         String name,
 

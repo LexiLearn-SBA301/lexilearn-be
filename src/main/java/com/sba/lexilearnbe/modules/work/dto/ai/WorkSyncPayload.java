@@ -13,7 +13,10 @@ public record WorkSyncPayload(
         OffsetDateTime syncedAt,
 
         WorkSyncWorkData work,
-        WorkSyncAuthorData author,
+
+        @JsonProperty("author_ref")
+        WorkSyncAuthorRefData authorRef,
+
         List<WorkSyncSectionData> sections,
         List<WorkSyncCommentaryData> commentaries,
         List<WorkSyncTagData> tags

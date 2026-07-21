@@ -1,7 +1,7 @@
 package com.sba.lexilearnbe.modules.work.services.impl;
 
 import com.sba.lexilearnbe.modules.work.dto.ai.WorkSyncPayload;
-import com.sba.lexilearnbe.modules.work.dto.ai.WorkSyncAuthorData;
+import com.sba.lexilearnbe.modules.work.dto.ai.WorkSyncAuthorRefData;
 import com.sba.lexilearnbe.modules.work.dto.ai.WorkSyncCommentaryData;
 import com.sba.lexilearnbe.modules.work.dto.ai.WorkSyncSectionData;
 import com.sba.lexilearnbe.modules.work.dto.ai.WorkSyncTagData;
@@ -50,7 +50,7 @@ public class WorkAiSyncSnapshotServiceImpl implements WorkAiSyncSnapshotService 
                 SCHEMA_VERSION,
                 OffsetDateTime.now(ZoneOffset.UTC),
                 toWorkData(work),
-                toAuthorData(author),
+                toAuthorRefData(author),
                 sections.stream().map(this::toSectionData).toList(),
                 commentaries.stream().map(this::toCommentaryData).toList(),
                 work.getTags().stream()
@@ -84,17 +84,10 @@ public class WorkAiSyncSnapshotServiceImpl implements WorkAiSyncSnapshotService 
         );
     }
 
-    private WorkSyncAuthorData toAuthorData(Author author) {
-        return new WorkSyncAuthorData(
+    private WorkSyncAuthorRefData toAuthorRefData(Author author) {
+        return new WorkSyncAuthorRefData(
                 author.getId(),
-                author.getName(),
-                author.getPenName(),
-                author.getSlug(),
-                author.getBirthYear(),
-                author.getDeathYear(),
-                author.getPeriod(),
-                author.getBio(),
-                author.getPortraitUrl()
+                author.getSlug()
         );
     }
 

@@ -4,7 +4,7 @@ import com.sba.lexilearnbe.modules.work.dto.request.AuthorRequest;
 import com.sba.lexilearnbe.modules.work.dto.response.AuthorDetailResponse;
 import com.sba.lexilearnbe.modules.work.dto.response.AuthorSummaryResponse;
 import com.sba.lexilearnbe.modules.work.entity.Author;
-import com.sba.lexilearnbe.modules.work.event.WorkSyncRequestedEvent;
+import com.sba.lexilearnbe.modules.work.event.AuthorSyncRequestedEvent;
 import com.sba.lexilearnbe.modules.work.mapper.AuthorMapper;
 import com.sba.lexilearnbe.modules.work.repository.AuthorRepository;
 import com.sba.lexilearnbe.modules.work.repository.WorkRepository;
@@ -81,6 +81,7 @@ public class AuthorServiceImpl implements AuthorService {
 
         try {
             Author savedAuthor = authorRepository.save(author);
+            publishAuthorUpsertSync(savedAuthor.getId());
             return authorMapper.toDetailResponse(savedAuthor);
         } catch (DataIntegrityViolationException e) {
             throw new ApiException(ErrorCode.AUTHOR_ALREADY_EXISTS);
@@ -106,7 +107,7 @@ public class AuthorServiceImpl implements AuthorService {
         }
 
         Author updatedAuthor = authorRepository.save(author);
-        publishAuthorWorksUpsertSync(updatedAuthor.getId());
+        publishAuthorUpsertSync(updatedAuthor.getId());
         return authorMapper.toDetailResponse(updatedAuthor);
     }
 
@@ -121,7 +122,7 @@ public class AuthorServiceImpl implements AuthorService {
         author.setPortraitPublicId(null);
         Author updatedAuthor = authorRepository.save(author);
         imageStorageTransactionManager.scheduleDeletion(oldPublicId);
-        publishAuthorWorksUpsertSync(updatedAuthor.getId());
+        publishAuthorUpsertSync(updatedAuthor.getId());
         return authorMapper.toDetailResponse(updatedAuthor);
     }
 
@@ -135,8 +136,10 @@ public class AuthorServiceImpl implements AuthorService {
                     "Không thể xoá tác giả này vì đã có tác phẩm liên kết trên hệ thống");
         }
         String portraitPublicId = author.getPortraitPublicId();
+        String authorSlug = author.getSlug();
         authorRepository.delete(author);
         imageStorageTransactionManager.scheduleDeletion(portraitPublicId);
+        eventPublisher.publishEvent(AuthorSyncRequestedEvent.delete(authorSlug));
     }
     private void validateAuthorYears(Integer birthYear, Integer deathYear) {
         int currentYear = java.time.Year.now().getValue(); // Tự động lấy năm hiện tại (2026)
@@ -154,8 +157,7 @@ public class AuthorServiceImpl implements AuthorService {
         }
     }
 
-    private void publishAuthorWorksUpsertSync(UUID authorId) {
-        workRepository.findIdsByAuthorId(authorId)
-                .forEach(workId -> eventPublisher.publishEvent(WorkSyncRequestedEvent.upsert(workId)));
+    private void publishAuthorUpsertSync(UUID authorId) {
+        eventPublisher.publishEvent(AuthorSyncRequestedEvent.upsert(authorId));
     }
 }
