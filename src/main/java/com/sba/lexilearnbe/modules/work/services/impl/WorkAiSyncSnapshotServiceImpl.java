@@ -87,6 +87,7 @@ public class WorkAiSyncSnapshotServiceImpl implements WorkAiSyncSnapshotService 
     private WorkSyncAuthorRefData toAuthorRefData(Author author) {
         return new WorkSyncAuthorRefData(
                 author.getId(),
+                author.getName(),
                 author.getSlug()
         );
     }
