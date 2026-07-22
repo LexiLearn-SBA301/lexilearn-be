@@ -19,12 +19,14 @@ services:
   lexilearn_redis:
     image: redis:7-alpine
     container_name: lexilearn_redis
+    # Redis mặc định nghe 6379 -> ép nghe 6369 cho khớp port map & REDIS_PORT.
+    command: ["redis-server", "--port", "6369"]
     ports:
       - "6369:6369"
     volumes:
       - lexilearn_redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-p", "6369", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -43,7 +45,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-root}
       # --- Redis ---
       REDIS_HOST: lexilearn_redis
-      REDIS_PORT: 6379
+      REDIS_PORT: 6369
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       # --- Mail (gửi OTP) ---
       MAIL_USERNAME: ${MAIL_USERNAME}
