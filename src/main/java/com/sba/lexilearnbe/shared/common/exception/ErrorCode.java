@@ -30,6 +30,8 @@ public enum ErrorCode {
     ACCOUNT_ALREADY_VERIFIED("account_already_verified", HttpStatus.CONFLICT, "Email đã được xác thực"),
     OTP_INVALID          ("otp_invalid",           HttpStatus.BAD_REQUEST, "Mã OTP không đúng"),
     OTP_EXPIRED          ("otp_expired",           HttpStatus.BAD_REQUEST, "Mã OTP đã hết hạn"),
+    PASSWORD_INCORRECT   ("password_incorrect",    HttpStatus.BAD_REQUEST, "Mật khẩu hiện tại không đúng"),
+    PASSWORD_SAME_AS_OLD ("password_same_as_old",  HttpStatus.BAD_REQUEST, "Mật khẩu mới phải khác mật khẩu hiện tại"),
 
     // ── Work ────────────────────────────────────────────────────
     WORK_NOT_FOUND       ("work_not_found",        HttpStatus.NOT_FOUND, "Tác phẩm không tồn tại"),
