@@ -39,6 +39,50 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class WorkServiceImpl implements WorkService {
 
+    private static final Map<String, List<String>> SUB_GENRES_BY_GENRE = new LinkedHashMap<>();
+
+    static {
+        SUB_GENRES_BY_GENRE.put("Truyện ngắn", List.of(
+                "Truyện ngắn hiện thực",
+                "Truyện ngắn lãng mạn",
+                "Truyện ngắn trào phúng",
+                "Truyện ngắn tâm lý",
+                "Truyền kỳ"
+        ));
+        SUB_GENRES_BY_GENRE.put("Tiểu thuyết", List.of(
+                "Tiểu thuyết hiện thực",
+                "Tiểu thuyết lịch sử",
+                "Tiểu thuyết tâm lý",
+                "Tiểu thuyết chiến tranh"
+        ));
+        SUB_GENRES_BY_GENRE.put("Thơ ca", List.of(
+                "Thơ tự do",
+                "Thơ Đường luật",
+                "Thơ lục bát",
+                "Thơ thất ngôn bát cú",
+                "Ca dao",
+                "Song thất lục bát",
+                "Văn tế"
+        ));
+        SUB_GENRES_BY_GENRE.put("Kịch", List.of(
+                "Kịch nói",
+                "Bi kịch",
+                "Hài kịch"
+        ));
+        SUB_GENRES_BY_GENRE.put("Ký", List.of(
+                "Bút ký",
+                "Tùy bút",
+                "Phóng sự",
+                "Hồi ký",
+                "Văn chính luận"
+        ));
+        SUB_GENRES_BY_GENRE.put("Truyện dân gian", List.of(
+                "Truyện cổ tích",
+                "Sử thi",
+                "Truyện thơ dân gian"
+        ));
+    }
+
     private final AuthorRepository authorRepository;
     private final WorkRepository workRepository;
     private final WorkMapper workMapper;
@@ -49,8 +93,8 @@ public class WorkServiceImpl implements WorkService {
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
-    public Page<WorkSummaryResponse> getWorksByFilter(String genre, String period, String searchKeyword, String tag, Pageable pageable) {
-        Specification<Work> spec = WorkSpecification.filterWorks(genre, period, tag, searchKeyword);
+    public Page<WorkSummaryResponse> getWorksByFilter(String genre, String subGenre, String period, String searchKeyword, String tag, Pageable pageable) {
+        Specification<Work> spec = WorkSpecification.filterWorks(genre, subGenre, period, tag, searchKeyword);
 
         Page<Work> worksPage = workRepository.findAll(spec, pageable);
 
@@ -75,6 +119,23 @@ public class WorkServiceImpl implements WorkService {
                 .toList();
 
         return new PageImpl<>(responseList, pageable, worksPage.getTotalElements());
+    }
+
+    @Override
+    public List<String> getGenres() {
+        return List.copyOf(SUB_GENRES_BY_GENRE.keySet());
+    }
+
+    @Override
+    public List<String> getSubGenres(String genre) {
+        if (StringUtils.hasText(genre)) {
+            return SUB_GENRES_BY_GENRE.getOrDefault(genre.trim(), List.of());
+        }
+
+        return SUB_GENRES_BY_GENRE.values().stream()
+                .flatMap(List::stream)
+                .distinct()
+                .toList();
     }
 
     @Transactional(readOnly = true)

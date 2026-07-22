@@ -38,16 +38,84 @@ DEFAULT_DATA_GLOB = "docs/data/data*.json"
 SCHEMA_VERSION = "literature_seed.v1"
 
 PERIOD_VALUES = {"dan_gian", "trung_dai", "hien_dai"}
-GENRE_VALUES = {"Truyện ngắn", "Thơ ca", "Tiểu thuyết"}
+GENRE_VALUES = {"Truyện ngắn", "Tiểu thuyết", "Thơ ca", "Kịch", "Ký", "Truyện dân gian"}
+SUB_GENRE_VALUES = {
+    "Truyện ngắn hiện thực",
+    "Truyện ngắn lãng mạn",
+    "Truyện ngắn trào phúng",
+    "Truyện ngắn tâm lý",
+    "Tiểu thuyết hiện thực",
+    "Tiểu thuyết lịch sử",
+    "Tiểu thuyết tâm lý",
+    "Tiểu thuyết chiến tranh",
+    "Thơ tự do",
+    "Thơ Đường luật",
+    "Thơ lục bát",
+    "Thơ thất ngôn bát cú",
+    "Bút ký",
+    "Tùy bút",
+    "Phóng sự",
+    "Hồi ký",
+    "Kịch nói",
+    "Bi kịch",
+    "Hài kịch",
+    "Truyện cổ tích",
+    "Sử thi",
+    "Truyện thơ dân gian",
+    "Ca dao",
+    "Song thất lục bát",
+    "Truyền kỳ",
+    "Văn chính luận",
+    "Văn tế",
+}
+FOLK_SUB_GENRE_VALUES = {"Truyện cổ tích", "Sử thi", "Truyện thơ dân gian"}
 LEGACY_GENRE_MAP = {
     "tho_ca": "Thơ ca",
     "truyen_tho": "Thơ ca",
     "truyen_ngan": "Truyện ngắn",
-    "truyen_dan_gian": "Truyện ngắn",
-    "su_thi": "Truyện ngắn",
-    "khao_cuu": "Truyện ngắn",
-    "van_chinh_luan": "Truyện ngắn",
+    "truyen_dan_gian": "Truyện dân gian",
+    "su_thi": "Truyện dân gian",
+    "khao_cuu": "Ký",
+    "van_chinh_luan": "Ký",
     "tieu_thuyet": "Tiểu thuyết",
+    "ky": "Ký",
+    "kich": "Kịch",
+}
+LEGACY_SUB_GENRE_MAP = {
+    "truyen_ngan_hien_thuc": "Truyện ngắn hiện thực",
+    "truyen_ngan_lang_man": "Truyện ngắn lãng mạn",
+    "truyen_ngan_trao_phung": "Truyện ngắn trào phúng",
+    "truyen_ngan_tam_ly": "Truyện ngắn tâm lý",
+    "tieu_thuyet_hien_thuc": "Tiểu thuyết hiện thực",
+    "tieu_thuyet_lich_su": "Tiểu thuyết lịch sử",
+    "tieu_thuyet_tam_ly": "Tiểu thuyết tâm lý",
+    "tieu_thuyet_chien_tranh": "Tiểu thuyết chiến tranh",
+    "tho_tu_do": "Thơ tự do",
+    "tho_duong_luat": "Thơ Đường luật",
+    "tho_luc_bat": "Thơ lục bát",
+    "luc_bat": "Thơ lục bát",
+    "that_ngon_bat_cu": "Thơ thất ngôn bát cú",
+    "that_ngon_tu_tuyet": "Thơ Đường luật",
+    "tho_nom_duong_luat": "Thơ Đường luật",
+    "but_ky": "Bút ký",
+    "tuy_but": "Tùy bút",
+    "phong_su": "Phóng sự",
+    "hoi_ky": "Hồi ký",
+    "hoi_ki": "Hồi ký",
+    "kich_noi": "Kịch nói",
+    "bi_kich": "Bi kịch",
+    "hai_kich": "Hài kịch",
+    "truyen_co_tich": "Truyện cổ tích",
+    "su_thi": "Sử thi",
+    "su_thi_dan_gian": "Sử thi",
+    "truyen_tho_dan_gian": "Truyện thơ dân gian",
+    "truyen_tho_nom": "Thơ lục bát",
+    "ca_dao": "Ca dao",
+    "song_that_luc_bat": "Song thất lục bát",
+    "truyen_ky": "Truyền kỳ",
+    "truyen_truyen_ky": "Truyền kỳ",
+    "van_chinh_luan": "Văn chính luận",
+    "van_te": "Văn tế",
 }
 CONTENT_TYPE_VALUES = {"PROSE", "POETRY", "MIXED"}
 KNOWN_CATEGORIES = {
@@ -374,14 +442,18 @@ def validate_chunks(chunks: list[Chunk]) -> list[str]:
 
         validate_slug_like(errors, label, "work_slug", chunk.work_slug)
         validate_slug_like(errors, label, "author_slug", chunk.author_slug)
-        genre = normalize_genre(metadata.get("genre"))
+        sub_genre = normalize_sub_genre(metadata.get("sub_genre"))
+        genre = normalize_genre(metadata.get("genre"), sub_genre=sub_genre)
         if genre not in GENRE_VALUES:
             errors.append(
                 f"{label}: metadata.genre must be one of {sorted(GENRE_VALUES)}, "
                 f"got {metadata.get('genre')!r}"
             )
-        if not is_blank(metadata.get("sub_genre")):
-            validate_slug_like(errors, label, "sub_genre", metadata.get("sub_genre"))
+        if sub_genre and sub_genre not in SUB_GENRE_VALUES:
+            errors.append(
+                f"{label}: metadata.sub_genre must be one of {sorted(SUB_GENRE_VALUES)}, "
+                f"got {metadata.get('sub_genre')!r}"
+            )
 
         if metadata.get("author_period") not in PERIOD_VALUES and not is_blank(metadata.get("author_period")):
             errors.append(
@@ -410,7 +482,7 @@ def validate_chunks(chunks: list[Chunk]) -> list[str]:
                 "author_period": metadata.get("author_period"),
                 "work_period": metadata.get("work_period"),
                 "genre": genre,
-                "sub_genre": nullable_str(metadata.get("sub_genre")),
+                "sub_genre": sub_genre,
                 "grade": grade,
                 "semester": semester,
                 "publish_year": to_int_or_none(metadata.get("publish_year")),
@@ -523,8 +595,17 @@ def validate_slug_like(errors: list[str], label: str, field_name: str, value: An
         )
 
 
-def normalize_genre(value: Any) -> str:
+def normalize_sub_genre(value: Any) -> str | None:
+    if is_blank(value):
+        return None
     text = str(value or "").strip()
+    return LEGACY_SUB_GENRE_MAP.get(text, text)
+
+
+def normalize_genre(value: Any, *, sub_genre: str | None = None) -> str:
+    text = str(value or "").strip()
+    if sub_genre in FOLK_SUB_GENRE_VALUES:
+        return "Truyện dân gian"
     return LEGACY_GENRE_MAP.get(text, text)
 
 
@@ -547,8 +628,8 @@ def build_work_seeds(chunks: list[Chunk], *, min_overlap: int) -> list[WorkSeed]
         author_name = str(first_meta["author_name"]).strip()
         author_slug = str(first_meta["author_slug"]).strip()
         author_period = str(first_meta["author_period"]).strip()
-        genre = normalize_genre(first_meta["genre"])
-        sub_genre = nullable_str(first_meta.get("sub_genre"))
+        sub_genre = normalize_sub_genre(first_meta.get("sub_genre"))
+        genre = normalize_genre(first_meta["genre"], sub_genre=sub_genre)
         work_period = str(first_meta["work_period"]).strip()
 
         category_content = collect_category_content(work_chunks)

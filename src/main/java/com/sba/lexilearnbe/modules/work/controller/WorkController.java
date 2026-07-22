@@ -40,6 +40,7 @@ public class WorkController {
     @Operation(summary = "Lấy danh sách Tác phẩm")
     public ResponseEntity<ApiResponse<Page<WorkSummaryResponse>>> getWorks(
             @RequestParam(required = false) String genre,
+            @RequestParam(required = false) String subGenre,
             @RequestParam(required = false) String period,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String tag,
@@ -47,7 +48,31 @@ public class WorkController {
     ) {
         ApiResponse<Page<WorkSummaryResponse>> response = ApiResponse.<Page<WorkSummaryResponse>>builder()
                 .message("Lấy danh sách tác phẩm thành công")
-                .result(workService.getWorksByFilter(genre, period, search, tag, pageable))
+                .result(workService.getWorksByFilter(genre, subGenre, period, search, tag, pageable))
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/genres")
+    @Operation(summary = "Lấy danh sách thể loại chính")
+    public ResponseEntity<ApiResponse<List<String>>> getGenres() {
+        ApiResponse<List<String>> response = ApiResponse.<List<String>>builder()
+                .message("Lấy danh sách thể loại chính thành công")
+                .result(workService.getGenres())
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/sub-genres")
+    @Operation(summary = "Lấy danh sách thể loại phụ", description = "Có thể truyền genre để lấy sub-genre theo thể loại chính")
+    public ResponseEntity<ApiResponse<List<String>>> getSubGenres(
+            @RequestParam(required = false) String genre
+    ) {
+        ApiResponse<List<String>> response = ApiResponse.<List<String>>builder()
+                .message("Lấy danh sách thể loại phụ thành công")
+                .result(workService.getSubGenres(genre))
                 .build();
 
         return ResponseEntity.ok(response);

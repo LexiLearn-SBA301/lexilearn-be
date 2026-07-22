@@ -11,9 +11,9 @@ import org.springframework.util.StringUtils;
 import java.util.ArrayList;
 import java.util.List;
 
-public class WorkSpecification {
+public class  WorkSpecification {
 
-    public static Specification<Work> filterWorks(String genre, String period, String tag, String search) {
+    public static Specification<Work> filterWorks(String genre, String subGenre, String period, String tag, String search) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -22,6 +22,11 @@ public class WorkSpecification {
             // Filter Thể loại
             if (StringUtils.hasText(genre)) {
                 predicates.add(criteriaBuilder.equal(root.get("genre"), genre.trim()));
+            }
+
+            // Filter Thể loại phụ
+            if (StringUtils.hasText(subGenre)) {
+                predicates.add(criteriaBuilder.equal(root.get("subGenre"), subGenre.trim()));
             }
 
             // Filter Thời kỳ
