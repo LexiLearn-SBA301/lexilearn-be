@@ -34,7 +34,7 @@ public class WorkReviewController {
     private final WorkReviewService reviewService;
 
     @GetMapping("/{workId}/reviews")
-    @Operation(summary = "Lấy bình phẩm đã được duyệt của tác phẩm")
+    @Operation(summary = "Lấy bình phẩm công khai của tác phẩm")
     public ResponseEntity<ApiResponse<Page<PublicWorkReviewResponse>>> getPublishedReviews(
             @PathVariable UUID workId,
             @RequestParam(defaultValue = "0") int page,
@@ -55,7 +55,7 @@ public class WorkReviewController {
     }
 
     @PostMapping("/{workId}/reviews")
-    @Operation(summary = "Gửi bình phẩm mới cho tác phẩm")
+    @Operation(summary = "Gửi bình phẩm mới cho tác phẩm", description = "Bình phẩm được hiển thị công khai ngay, không cần admin duyệt")
     public ResponseEntity<ApiResponse<MyWorkReviewResponse>> createReview(
             @AuthenticationPrincipal UUID accountId,
             @PathVariable UUID workId,
@@ -64,7 +64,7 @@ public class WorkReviewController {
         ApiResponse<MyWorkReviewResponse> response =
                 ApiResponse.<MyWorkReviewResponse>builder()
                         .code("success")
-                        .message("Gửi bình phẩm thành công, nội dung đang chờ duyệt")
+                        .message("Gửi bình phẩm thành công")
                         .result(reviewService.createReview(accountId, workId, request))
                         .timestamp(LocalDateTime.now())
                         .path(servletRequest.getRequestURI())

@@ -83,7 +83,7 @@ public class MyWorkReviewController {
         ApiResponse<MyWorkReviewResponse> response =
                 ApiResponse.<MyWorkReviewResponse>builder()
                         .code("success")
-                        .message("Cập nhật bình phẩm thành công, nội dung đang chờ duyệt")
+                        .message("Cập nhật bình phẩm thành công")
                         .result(reviewService.updateMyReview(
                                 accountId, reviewId, request
                         ))

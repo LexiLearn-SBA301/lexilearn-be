@@ -4,16 +4,13 @@ import com.sba.lexilearnbe.modules.auth.entity.Account;
 import com.sba.lexilearnbe.modules.auth.enums.AccountStatus;
 import com.sba.lexilearnbe.modules.auth.repository.AccountRepository;
 import com.sba.lexilearnbe.modules.work.dto.request.CreateWorkReviewRequest;
-import com.sba.lexilearnbe.modules.work.dto.request.ModerateWorkReviewRequest;
 import com.sba.lexilearnbe.modules.work.dto.request.UpdateWorkReviewRequest;
-import com.sba.lexilearnbe.modules.work.dto.response.AdminWorkReviewResponse;
 import com.sba.lexilearnbe.modules.work.dto.response.MyWorkReviewResponse;
 import com.sba.lexilearnbe.modules.work.dto.response.PublicWorkReviewResponse;
 import com.sba.lexilearnbe.modules.work.dto.response.ReviewRevisionResponse;
 import com.sba.lexilearnbe.modules.work.entity.Work;
 import com.sba.lexilearnbe.modules.work.entity.WorkReview;
 import com.sba.lexilearnbe.modules.work.entity.WorkReviewRevision;
-import com.sba.lexilearnbe.modules.work.enums.ReviewModerationDecision;
 import com.sba.lexilearnbe.modules.work.enums.ReviewRevisionStatus;
 import com.sba.lexilearnbe.modules.work.mapper.WorkReviewMapper;
 import com.sba.lexilearnbe.modules.work.repository.WorkRepository;
@@ -41,8 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -50,7 +45,7 @@ public class WorkReviewServiceImpl implements WorkReviewService {
 
     private static final int MAX_PAGE_SIZE = 100;
     private static final Collection<ReviewRevisionStatus> CURRENT_STATE_STATUSES =
-            List.of(ReviewRevisionStatus.APPROVED, ReviewRevisionStatus.PENDING);
+            List.of(ReviewRevisionStatus.APPROVED);
     private static final Map<String, String> PUBLIC_SORT_FIELDS = Map.of(
             "createdAt", "createdAt",
             "reviewedAt", "reviewedAt",
@@ -60,13 +55,6 @@ public class WorkReviewServiceImpl implements WorkReviewService {
             "createdAt", "createdAt",
             "updatedAt", "updatedAt",
             "workTitle", "work.title"
-    );
-    private static final Map<String, String> ADMIN_SORT_FIELDS = Map.of(
-            "createdAt", "createdAt",
-            "reviewedAt", "reviewedAt",
-            "versionNumber", "versionNumber",
-            "reviewerName", "review.account.fullName",
-            "workTitle", "review.work.title"
     );
 
     private final WorkRepository workRepository;
@@ -92,25 +80,18 @@ public class WorkReviewServiceImpl implements WorkReviewService {
 
         Account account = requireAccount(accountId);
         Work work = requireReadableWork(workId);
-        if (reviewRepository.existsByAccountIdAndWorkId(accountId, workId)) {
-            throw new ApiException(ErrorCode.REVIEW_ALREADY_EXISTS);
-        }
 
         WorkReview review = reviewMapper.toEntity(work, account);
-        try {
-            review = reviewRepository.saveAndFlush(review);
-        }
-        catch (DataIntegrityViolationException exception) {
-            throw new ApiException(ErrorCode.REVIEW_ALREADY_EXISTS);
-        }
+        review = reviewRepository.saveAndFlush(review);
 
         WorkReviewRevision revision = reviewMapper.toRevisionEntity(request);
         revision.setReview(review);
         revision.setVersionNumber(1);
-        revision.setStatus(ReviewRevisionStatus.PENDING);
+        revision.setStatus(ReviewRevisionStatus.APPROVED);
+        revision.setReviewedAt(LocalDateTime.now());
         revision = revisionRepository.saveAndFlush(revision);
 
-        return reviewMapper.toMyResponse(review, null, reviewMapper.toRevisionResponse(revision), null);
+        return reviewMapper.toMyResponse(review, reviewMapper.toRevisionResponse(revision), null, null);
     }
 
     @Override
@@ -147,39 +128,33 @@ public class WorkReviewServiceImpl implements WorkReviewService {
         WorkReview review = reviewRepository.findOwnedByIdForUpdate(reviewId, accountId)
                 .orElseThrow(() -> new ApiException(ErrorCode.REVIEW_NOT_FOUND));
 
-        WorkReviewRevision pending = revisionRepository.findByReviewIdAndStatus(
-                        reviewId, ReviewRevisionStatus.PENDING
+        WorkReviewRevision currentApproved = revisionRepository.findByReviewIdAndStatus(
+                        reviewId, ReviewRevisionStatus.APPROVED
                 )
                 .orElse(null);
-
-        if (pending == null) {
-            WorkReviewRevision latest = revisionRepository.findLatestByReviewId(reviewId)
-                    .orElseThrow(() -> new ApiException(ErrorCode.REVIEW_REVISION_NOT_FOUND));
-            pending = reviewMapper.toPendingRevision(latest);
-            pending.setReview(review);
-            pending.setVersionNumber(
-                    revisionRepository.findMaxVersionByReviewId(reviewId) + 1
-            );
-            pending.setStatus(ReviewRevisionStatus.PENDING);
+        if (currentApproved != null) {
+            currentApproved.setStatus(ReviewRevisionStatus.SUPERSEDED);
+            revisionRepository.saveAndFlush(currentApproved);
         }
 
-        reviewMapper.updateEntityFromRequest(request, pending);
-        pending.setRejectionReason(null);
-        pending.setReviewedBy(null);
-        pending.setReviewedAt(null);
-
-        try {
-            pending = revisionRepository.saveAndFlush(pending);
-        }
-        catch (DataIntegrityViolationException exception) {
-            throw new ApiException(ErrorCode.REVIEW_ALREADY_PENDING, "Bình phẩm đã có một phiên bản đang chờ duyệt"
-            );
-        }
+        WorkReviewRevision latest = revisionRepository.findLatestByReviewId(reviewId)
+                .orElseThrow(() -> new ApiException(ErrorCode.REVIEW_REVISION_NOT_FOUND));
+        WorkReviewRevision nextApproved = reviewMapper.toPendingRevision(latest);
+        nextApproved.setReview(review);
+        nextApproved.setVersionNumber(
+                revisionRepository.findMaxVersionByReviewId(reviewId) + 1
+        );
+        nextApproved.setStatus(ReviewRevisionStatus.APPROVED);
+        nextApproved.setRejectionReason(null);
+        nextApproved.setReviewedBy(null);
+        nextApproved.setReviewedAt(LocalDateTime.now());
+        reviewMapper.updateEntityFromRequest(request, nextApproved);
+        nextApproved = revisionRepository.saveAndFlush(nextApproved);
 
         review.setUpdatedAt(LocalDateTime.now());
         reviewRepository.save(review);
         ReviewState state = loadState(review);
-        state.put(pending);
+        state.put(nextApproved);
         return toMyResponse(review, state);
     }
 
@@ -189,73 +164,6 @@ public class WorkReviewServiceImpl implements WorkReviewService {
         WorkReview review = reviewRepository.findOwnedByIdForUpdate(reviewId, accountId)
                 .orElseThrow(() -> new ApiException(ErrorCode.REVIEW_NOT_FOUND));
         reviewRepository.delete(review);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Page<AdminWorkReviewResponse> getReviewsForModeration(String status, int page, int size, String sortDir, String sortBy) {
-
-        ReviewRevisionStatus parsedStatus = parseStatus(status);
-
-        Pageable pageable = createPageable(page, size, sortDir, sortBy, ADMIN_SORT_FIELDS);
-
-        Page<WorkReviewRevision> revisions = revisionRepository.findAllByStatus(parsedStatus, pageable);
-
-        Map<UUID, WorkReviewRevision> approvedByReview = loadApprovedByReview(revisions.getContent());
-
-        return revisions.map(
-                revision -> reviewMapper.toAdminResponse( revision,
-                                                                            toRevisionResponse(approvedByReview.get(revision.getReview().getId()))));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public AdminWorkReviewResponse getModerationDetail(UUID revisionId) {
-        WorkReviewRevision revision = requireRevision(revisionId);
-        WorkReviewRevision approved = revisionRepository.findByReviewIdAndStatus(revision.getReview().getId(), ReviewRevisionStatus.APPROVED).orElse(null);
-        return reviewMapper.toAdminResponse(revision, toRevisionResponse(approved)
-        );
-    }
-
-    @Override
-    @Transactional
-    public AdminWorkReviewResponse moderateReview(UUID adminId, UUID revisionId, ModerateWorkReviewRequest request) {
-
-        validateModerationRequest(request);
-
-        Account admin = requireAccount(adminId);
-
-        UUID reviewId = revisionRepository.findReviewIdByRevisionId(revisionId)
-                .orElseThrow(() -> new ApiException(ErrorCode.REVIEW_REVISION_NOT_FOUND));
-
-        reviewRepository.findByIdForUpdate(reviewId)
-                .orElseThrow(() -> new ApiException(ErrorCode.REVIEW_NOT_FOUND));
-
-        WorkReviewRevision revision = requireRevision(revisionId);
-        if (revision.getStatus() != ReviewRevisionStatus.PENDING) {
-            throw new ApiException(ErrorCode.INVALID_REVIEW_STATUS, "Chỉ có thể kiểm duyệt phiên bản đang chờ duyệt");
-        }
-
-        LocalDateTime reviewedAt = LocalDateTime.now();
-        if (request.decision() == ReviewModerationDecision.APPROVE) {
-            revisionRepository.findByReviewIdAndStatus(reviewId, ReviewRevisionStatus.APPROVED)
-                    .ifPresent(current -> {current.setStatus(ReviewRevisionStatus.SUPERSEDED);
-                        revisionRepository.saveAndFlush(current);
-                    });
-            revision.setStatus(ReviewRevisionStatus.APPROVED);
-            revision.setRejectionReason(null);
-        }
-        else {
-            revision.setStatus(ReviewRevisionStatus.REJECTED);
-            revision.setRejectionReason(request.rejectionReason().trim());
-        }
-        revision.setReviewedBy(admin);
-        revision.setReviewedAt(reviewedAt);
-        revision = revisionRepository.saveAndFlush(revision);
-
-        WorkReviewRevision approved = revision.getStatus() == ReviewRevisionStatus.APPROVED ? revision : revisionRepository.findByReviewIdAndStatus(reviewId, ReviewRevisionStatus.APPROVED)
-                .orElse(null);
-        return reviewMapper.toAdminResponse(revision, toRevisionResponse(approved));
     }
 
     private Account requireAccount(UUID accountId) {
@@ -284,37 +192,9 @@ public class WorkReviewServiceImpl implements WorkReviewService {
         return work;
     }
 
-    private WorkReviewRevision requireRevision(UUID revisionId) {
-
-        if (revisionId == null){
-            throw new ApiException(ErrorCode.VALIDATION_ERROR, "revisionId không được để trống");
-        }
-        return revisionRepository.findByIdWithRelations(revisionId)
-                .orElseThrow(() -> new ApiException(ErrorCode.REVIEW_REVISION_NOT_FOUND));
-    }
-
     private void validateUpdateRequest(UpdateWorkReviewRequest request) {
         if (request.title() == null && request.content() == null) {
             throw new ApiException(ErrorCode.VALIDATION_ERROR, "Phải gửi ít nhất một nội dung cần cập nhật");
-        }
-    }
-
-    private void validateModerationRequest(ModerateWorkReviewRequest request) {
-        boolean hasReason = StringUtils.hasText(request.rejectionReason());
-        if (request.decision() == ReviewModerationDecision.REJECT && !hasReason) {
-            throw new ApiException(ErrorCode.VALIDATION_ERROR, "Phải nhập lý do khi từ chối bình phẩm");
-        }
-    }
-
-    private ReviewRevisionStatus parseStatus(String status) {
-        if (!StringUtils.hasText(status)) {
-            throw new ApiException(ErrorCode.VALIDATION_ERROR, "Trạng thái phiên bản không được để trống");
-        }
-        try {
-            return ReviewRevisionStatus.valueOf(status.trim().toUpperCase());
-        }
-        catch (IllegalArgumentException exception) {
-            throw new ApiException(ErrorCode.VALIDATION_ERROR, "Trạng thái phiên bản không hợp lệ");
         }
     }
 
@@ -350,28 +230,6 @@ public class WorkReviewServiceImpl implements WorkReviewService {
 
     private ReviewRevisionResponse toRevisionResponse(WorkReviewRevision revision) {
         return revision == null ? null : reviewMapper.toRevisionResponse(revision);
-    }
-
-    private Map<UUID, WorkReviewRevision> loadApprovedByReview(
-            List<WorkReviewRevision> revisions) {
-        List<UUID> reviewIds = revisions.stream()
-                .map(revision -> revision.getReview().getId())
-                .distinct()
-                .toList();
-        if (reviewIds.isEmpty()) {
-            return Map.of();
-        }
-        return revisionRepository.findCurrentStatesByReviewIds(
-                        reviewIds,
-                        List.of(ReviewRevisionStatus.APPROVED),
-                        ReviewRevisionStatus.REJECTED
-                )
-                .stream()
-                .filter(revision -> revision.getStatus() == ReviewRevisionStatus.APPROVED)
-                .collect(Collectors.toMap(
-                        revision -> revision.getReview().getId(),
-                        Function.identity()
-                ));
     }
 
     private Pageable createPageable(int page, int size, String sortDir, String sortBy, Map<String, String> allowedSortFields) {
