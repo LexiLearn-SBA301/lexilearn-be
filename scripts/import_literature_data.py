@@ -38,6 +38,17 @@ DEFAULT_DATA_GLOB = "docs/data/data*.json"
 SCHEMA_VERSION = "literature_seed.v1"
 
 PERIOD_VALUES = {"dan_gian", "trung_dai", "hien_dai"}
+GENRE_VALUES = {"Truyện ngắn", "Thơ ca", "Tiểu thuyết"}
+LEGACY_GENRE_MAP = {
+    "tho_ca": "Thơ ca",
+    "truyen_tho": "Thơ ca",
+    "truyen_ngan": "Truyện ngắn",
+    "truyen_dan_gian": "Truyện ngắn",
+    "su_thi": "Truyện ngắn",
+    "khao_cuu": "Truyện ngắn",
+    "van_chinh_luan": "Truyện ngắn",
+    "tieu_thuyet": "Tiểu thuyết",
+}
 CONTENT_TYPE_VALUES = {"PROSE", "POETRY", "MIXED"}
 KNOWN_CATEGORIES = {
     "text_section",
@@ -363,7 +374,12 @@ def validate_chunks(chunks: list[Chunk]) -> list[str]:
 
         validate_slug_like(errors, label, "work_slug", chunk.work_slug)
         validate_slug_like(errors, label, "author_slug", chunk.author_slug)
-        validate_slug_like(errors, label, "genre", metadata.get("genre"))
+        genre = normalize_genre(metadata.get("genre"))
+        if genre not in GENRE_VALUES:
+            errors.append(
+                f"{label}: metadata.genre must be one of {sorted(GENRE_VALUES)}, "
+                f"got {metadata.get('genre')!r}"
+            )
         if not is_blank(metadata.get("sub_genre")):
             validate_slug_like(errors, label, "sub_genre", metadata.get("sub_genre"))
 
@@ -393,7 +409,7 @@ def validate_chunks(chunks: list[Chunk]) -> list[str]:
                 "author_slug": metadata.get("author_slug"),
                 "author_period": metadata.get("author_period"),
                 "work_period": metadata.get("work_period"),
-                "genre": metadata.get("genre"),
+                "genre": genre,
                 "sub_genre": nullable_str(metadata.get("sub_genre")),
                 "grade": grade,
                 "semester": semester,
@@ -507,6 +523,11 @@ def validate_slug_like(errors: list[str], label: str, field_name: str, value: An
         )
 
 
+def normalize_genre(value: Any) -> str:
+    text = str(value or "").strip()
+    return LEGACY_GENRE_MAP.get(text, text)
+
+
 def is_blank(value: Any) -> bool:
     return value is None or str(value).strip() == ""
 
@@ -526,7 +547,7 @@ def build_work_seeds(chunks: list[Chunk], *, min_overlap: int) -> list[WorkSeed]
         author_name = str(first_meta["author_name"]).strip()
         author_slug = str(first_meta["author_slug"]).strip()
         author_period = str(first_meta["author_period"]).strip()
-        genre = str(first_meta["genre"]).strip()
+        genre = normalize_genre(first_meta["genre"])
         sub_genre = nullable_str(first_meta.get("sub_genre"))
         work_period = str(first_meta["work_period"]).strip()
 
