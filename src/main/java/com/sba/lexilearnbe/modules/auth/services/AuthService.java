@@ -1,11 +1,13 @@
 package com.sba.lexilearnbe.modules.auth.services;
 
+import com.sba.lexilearnbe.modules.auth.dto.request.ChangePasswordRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.ForgotPasswordRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.LoginRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.RefreshTokenRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.RegisterRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.ResendOtpRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.ResetPasswordRequest;
+import com.sba.lexilearnbe.modules.auth.dto.request.UpdateProfileRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.VerifyOtpRequest;
 import com.sba.lexilearnbe.modules.auth.dto.response.TokenResponse;
 import com.sba.lexilearnbe.modules.auth.dto.response.UserResponse;
@@ -77,4 +79,24 @@ public interface AuthService {
      * @return UserResponse chứa id, email, status, roles, emailVerifiedAt, createdAt
      */
     UserResponse getCurrentUser(UUID accountId);
+
+    /**
+     * Cập nhật thông tin profile (họ tên) của account đang đăng nhập.
+     * Dùng chung cho mọi vai trò (USER/ADMIN), chỉ cần đã đăng nhập.
+     *
+     * @param accountId UUID của account lấy từ JWT principal
+     * @param request   thông tin cần cập nhật (fullName)
+     * @return UserResponse sau khi cập nhật
+     */
+    UserResponse updateProfile(UUID accountId, UpdateProfileRequest request);
+
+    /**
+     * Đổi mật khẩu cho account đang đăng nhập: so khớp mật khẩu hiện tại,
+     * kiểm tra mật khẩu mới phải khác mật khẩu cũ, rồi lưu hash mới.
+     * Không thu hồi token — phiên đăng nhập hiện tại vẫn giữ nguyên.
+     *
+     * @param accountId UUID của account lấy từ JWT principal
+     * @param request   mật khẩu hiện tại + mật khẩu mới
+     */
+    void changePassword(UUID accountId, ChangePasswordRequest request);
 }

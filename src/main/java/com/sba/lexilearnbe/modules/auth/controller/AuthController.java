@@ -1,11 +1,13 @@
 package com.sba.lexilearnbe.modules.auth.controller;
 
+import com.sba.lexilearnbe.modules.auth.dto.request.ChangePasswordRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.ForgotPasswordRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.LoginRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.RefreshTokenRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.RegisterRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.ResendOtpRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.ResetPasswordRequest;
+import com.sba.lexilearnbe.modules.auth.dto.request.UpdateProfileRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.VerifyOtpRequest;
 import com.sba.lexilearnbe.modules.auth.dto.response.TokenResponse;
 import com.sba.lexilearnbe.modules.auth.dto.response.UserResponse;
@@ -23,6 +25,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -161,6 +164,41 @@ public class AuthController {
         ApiResponse<UserResponse> response = ApiResponse.<UserResponse>builder()
                 .message("Lấy thông tin tài khoản thành công.")
                 .result(user)
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/me")
+    @Operation(summary = "Cập nhật thông tin tài khoản", description = "Cập nhật họ tên của account đang đăng nhập (dùng chung cho USER và ADMIN)")
+    // Override @SecurityRequirements rỗng ở class: endpoint yêu cầu Bearer token
+    @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_BEARER)
+    public ResponseEntity<ApiResponse<UserResponse>> updateProfile(
+            @AuthenticationPrincipal UUID accountId,
+            @Valid @RequestBody UpdateProfileRequest request) {
+        UserResponse user = authService.updateProfile(accountId, request);
+
+        ApiResponse<UserResponse> response = ApiResponse.<UserResponse>builder()
+                .message("Cập nhật thông tin thành công.")
+                .result(user)
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/change-password")
+    @Operation(summary = "Đổi mật khẩu", description = "Đổi mật khẩu cho account đang đăng nhập (cần mật khẩu hiện tại). Phiên đăng nhập hiện tại vẫn được giữ nguyên")
+    // Override @SecurityRequirements rỗng ở class: endpoint yêu cầu Bearer token
+    @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_BEARER)
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @AuthenticationPrincipal UUID accountId,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(accountId, request);
+
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .message("Đổi mật khẩu thành công.")
                 .timestamp(LocalDateTime.now())
                 .build();
 

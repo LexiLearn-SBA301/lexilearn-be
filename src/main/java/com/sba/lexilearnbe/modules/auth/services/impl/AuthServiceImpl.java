@@ -1,11 +1,13 @@
 package com.sba.lexilearnbe.modules.auth.services.impl;
 
+import com.sba.lexilearnbe.modules.auth.dto.request.ChangePasswordRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.ForgotPasswordRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.LoginRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.RefreshTokenRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.RegisterRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.ResendOtpRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.ResetPasswordRequest;
+import com.sba.lexilearnbe.modules.auth.dto.request.UpdateProfileRequest;
 import com.sba.lexilearnbe.modules.auth.dto.request.VerifyOtpRequest;
 import com.sba.lexilearnbe.modules.auth.dto.response.TokenResponse;
 import com.sba.lexilearnbe.modules.auth.dto.response.UserResponse;
@@ -272,6 +274,56 @@ public class AuthServiceImpl implements AuthService {
         Account account = accountRepository.findWithRolesById(accountId)
                 .orElseThrow(() -> new ApiException(ErrorCode.ACCOUNT_NOT_FOUND));
 
+        return toUserResponse(account);
+    }
+
+    /**
+     * Cập nhật profile của account đang đăng nhập (hiện chỉ có họ tên).
+     * Dùng findWithRolesById để response trả về đầy đủ roles như GET /me.
+     */
+    @Override
+    @Transactional
+    public UserResponse updateProfile(UUID accountId, UpdateProfileRequest request) {
+        Account account = accountRepository.findWithRolesById(accountId)
+                .orElseThrow(() -> new ApiException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+        account.setFullName(request.getFullName().trim());
+        accountRepository.save(account);
+
+        log.info("Cập nhật thông tin tài khoản: {}", account.getEmail());
+        return toUserResponse(account);
+    }
+
+    /**
+     * Đổi mật khẩu khi đang đăng nhập:
+     * 1. Lấy account theo id từ JWT principal
+     * 2. Mật khẩu hiện tại sai → PASSWORD_INCORRECT
+     * 3. Mật khẩu mới trùng mật khẩu cũ → PASSWORD_SAME_AS_OLD
+     * 4. Mã hóa BCrypt mật khẩu mới và lưu
+     * Không thu hồi refresh token / blacklist access token: user vẫn giữ nguyên phiên đăng nhập.
+     */
+    @Override
+    @Transactional
+    public void changePassword(UUID accountId, ChangePasswordRequest request) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new ApiException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), account.getPasswordHash())) {
+            throw new ApiException(ErrorCode.PASSWORD_INCORRECT);
+        }
+
+        if (request.getNewPassword().equals(request.getCurrentPassword())) {
+            throw new ApiException(ErrorCode.PASSWORD_SAME_AS_OLD);
+        }
+
+        account.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        accountRepository.save(account);
+
+        log.info("Đổi mật khẩu thành công: {}", account.getEmail());
+    }
+
+    /** Map Account (đã fetch kèm roles) sang UserResponse trả về cho client. */
+    private UserResponse toUserResponse(Account account) {
         Set<String> roleNames = account.getRoles().stream()
                 .map(Role::getName)
                 .collect(Collectors.toSet());
