@@ -7,7 +7,7 @@ COPY pom.xml .
 COPY src ./src
 
 # Build jar, bỏ test cho nhanh. Cache mount .m2 để build lần sau nhanh hơn.
-RUN --mount=type=cache,target=/root/.m2 mvn clean package -DskipTests -B
+RUN mvn clean package -DskipTests -B
 
 # ===== Stage 2: Runtime =====
 FROM eclipse-temurin:21-jre-alpine

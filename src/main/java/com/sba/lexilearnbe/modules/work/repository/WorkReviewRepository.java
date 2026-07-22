@@ -16,17 +16,6 @@ import java.util.UUID;
 @Repository
 public interface WorkReviewRepository extends JpaRepository<WorkReview, UUID> {
 
-    @Query("""
-            SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END
-            FROM WorkReview r
-            WHERE r.account.id = :accountId
-              AND r.work.id = :workId
-            """)
-    boolean existsByAccountIdAndWorkId(
-            @Param("accountId") UUID accountId,
-            @Param("workId") UUID workId
-    );
-
     @Query(
             value = """
                     SELECT r

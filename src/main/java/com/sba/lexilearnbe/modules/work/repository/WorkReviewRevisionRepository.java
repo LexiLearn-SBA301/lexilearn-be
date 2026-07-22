@@ -42,47 +42,6 @@ public interface WorkReviewRevisionRepository
             Pageable pageable
     );
 
-    @Query(
-            value = """
-                    SELECT v
-                    FROM WorkReviewRevision v
-                    JOIN FETCH v.review r
-                    JOIN FETCH r.work
-                    JOIN FETCH r.account
-                    LEFT JOIN FETCH v.reviewedBy
-                    WHERE v.status = :status
-                    """,
-            countQuery = """
-                    SELECT COUNT(v)
-                    FROM WorkReviewRevision v
-                    WHERE v.status = :status
-                    """
-    )
-    Page<WorkReviewRevision> findAllByStatus(
-            @Param("status") ReviewRevisionStatus status,
-            Pageable pageable
-    );
-
-    @Query("""
-            SELECT v
-            FROM WorkReviewRevision v
-            JOIN FETCH v.review r
-            JOIN FETCH r.work
-            JOIN FETCH r.account
-            LEFT JOIN FETCH v.reviewedBy
-            WHERE v.id = :revisionId
-            """)
-    Optional<WorkReviewRevision> findByIdWithRelations(
-            @Param("revisionId") UUID revisionId
-    );
-
-    @Query("""
-            SELECT v.review.id
-            FROM WorkReviewRevision v
-            WHERE v.id = :revisionId
-            """)
-    Optional<UUID> findReviewIdByRevisionId(@Param("revisionId") UUID revisionId);
-
     @Query("""
             SELECT v
             FROM WorkReviewRevision v
